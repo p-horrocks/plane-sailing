@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 class PointSet;
+class Track3D;
+class Point3D;
 
 struct Distribution
 {
@@ -32,14 +34,6 @@ struct Point
     double y;
 };
 
-struct Point3D : public Point
-{
-    Point3D() {}
-    Point3D(double x_, double y_, double z_) : Point(x_, y_), z(z_) {}
-
-    double z;
-};
-
 #define DEG2RAD(x) ((x) * M_PI / 180.0)
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 
@@ -63,7 +57,7 @@ Point3D CalcTrack(
         double                bankRateAccel,
         const PointSet&       planeSpeeds,   // x=time     y=speed
         double                windHeading,
-        std::vector<Point3D>* track = NULL
+        Track3D*              track = NULL
         );
 
 Point utmToLatLng(int zone, const Point& en, bool northernHemisphere = true);

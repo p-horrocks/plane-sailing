@@ -8,6 +8,8 @@
 #include "util.h"
 #include "pointset.h"
 #include "kmlfile.h"
+#include "track3d.h"
+#include "point3d.h"
 
 const int MAP_CELLS_X               = 50;
 const int MAP_CELLS_Y               = 50;
@@ -87,10 +89,10 @@ int main(int argc, char *argv[])
 //    MTI_E2 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]-Deviation)
 //    MTI_N2 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]-Deviation)
 
-//    KmlFile xml("track.xml");
+    KmlFile kml("track.kml");
 
     // Nominal Track
-    std::vector<Point3D> track;
+    Track3D track;
     Point3D end = CalcTrack(
                 towerLocation,
                 towerFix,
@@ -106,8 +108,8 @@ int main(int argc, char *argv[])
                 &track
                 );
 
-    std::cout << "Nominal Crash Location: " << end.x << " " << end.y << std::endl;
-//    kml.addLine(track, "99ff7777");
+    std::cout << "Nominal Crash Location: " << end.x_ << " " << end.y_ << std::endl;
+    kml.addTrack(track, "99ff7777");
 
 //    KmlTrack = kml.newlinestring(name = "Nominal Track", coords = Track,
 //                                 altitudemode = simplekml.AltitudeMode.absolute)

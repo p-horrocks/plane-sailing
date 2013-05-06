@@ -5,6 +5,8 @@
 #include <cstring>
 
 #include "pointset.h"
+#include "track3d.h"
+#include "point3d.h"
 
 // Format string used for times.
 const char* TIME_FORMAT = "%H:%M:%S";
@@ -78,7 +80,7 @@ Point3D CalcTrack(
         double                bankRateAccel,
         const PointSet&       planeSpeeds,
         double                windHeading,
-        std::vector<Point3D>* track
+        Track3D*              track
         )
 {
     if(track != NULL)
@@ -88,9 +90,9 @@ Point3D CalcTrack(
 
     // Set up the initial conditions.
     Point3D position;
-    position.x      = towerPosition.x + fix.range * sin(fix.bearing);
-    position.y      = towerPosition.y + fix.range * cos(fix.bearing);
-    position.z      = 0.0;
+    position.x_     = towerPosition.x + fix.range * sin(fix.bearing);
+    position.y_     = towerPosition.y + fix.range * cos(fix.bearing);
+    position.z_     = 0.0;
     double time     = 0.0;
     double bankRate = initialBankRate;
     windHeading     = (M_PI / -2) - windHeading; // reversed as wind direction is where the wind is FROM
@@ -116,18 +118,18 @@ Point3D CalcTrack(
         double planeSpeed = planeSpeeds.interpolate(time);
 
         // Update the simulated plane location.
-        heading    += bankRate * thisStep;
-        bankRate   += bankRateAccel * thisStep;
-        double hdg = (M_PI / 2) - heading;
-        position.z = altitude;
-        position.x += thisStep * (planeSpeed * cos(hdg) + windSpeed * cosWind);
-        position.y += thisStep * (planeSpeed * sin(hdg) + windSpeed * sinWind);
+        heading     += bankRate * thisStep;
+        bankRate    += bankRateAccel * thisStep;
+        double hdg  = (M_PI / 2) - heading;
+        position.z_ = altitude;
+        position.x_ += thisStep * (planeSpeed * cos(hdg) + windSpeed * cosWind);
+        position.y_ += thisStep * (planeSpeed * sin(hdg) + windSpeed * sinWind);
 
         if(track != NULL)
         {
-            Point p = MGRSToUTM(position, "AGD66", "WGS84");
+            Point p = MGRSToUTM(Point(position.x_, position.y_), "AGD66", "WGS84");
             p = utmToLatLng(56, p, false);
-            track->push_back(Point3D(p.x, p.y, position.z));
+            track->addPoint(p.x, p.y, position.z_);
         }
     }
 

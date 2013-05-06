@@ -2,7 +2,7 @@
 #define KMLFILE_H
 
 #include <fstream>
-#include "util.h"
+class Track3D;
 
 class KmlFile
 {
@@ -10,7 +10,7 @@ public:
     KmlFile(const std::string& path);
     ~KmlFile();
 
-    void addLine(const std::vector<Point3D>& line, const char* colour);
+    void addTrack(const Track3D& track, const char* colour);
 
 protected:
     std::ofstream os_;

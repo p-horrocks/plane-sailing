@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <cstring>
 
+#include "track3d.h"
+
 KmlFile::KmlFile(const std::string& path)
 {
     os_.open(path);
@@ -16,7 +18,7 @@ KmlFile::KmlFile(const std::string& path)
 
     os_ << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
     os_ << "<kml xmlns=\"http://www.opengis.net/kml/2.2\">" << std::endl;
-    os_ << "<Folder>" << std::endl;
+    os_ << "  <Document>" << std::endl;
 //        <Style id="stylesel_0">
 //            <LineStyle id="substyle_0">
 //                <color>99ff7777</color>
@@ -28,9 +30,24 @@ KmlFile::KmlFile(const std::string& path)
 
 KmlFile::~KmlFile()
 {
-    os_ << "</Folder>" << std::endl;
+    os_ << "  </Document>" << std::endl;
+    os_ << "</kml>" << std::endl;
 }
 
-void KmlFile::addLine(const std::vector<Point3D>& line, const char* colour)
+void KmlFile::addTrack(const Track3D& track, const char* colour)
 {
+    os_ << "    <Placemark>" << std::endl;
+    os_ << "      <LineString>" << std::endl;
+    os_ << "        <LineStyle>" << std::endl;
+    os_ << "          <color>" << colour << "</color>" << std::endl;
+    os_ << "        </LineStyle>" << std::endl;
+    os_ << "        <altitudeMode>absolute</altitudeMode>" << std::endl;
+    os_ << "        <coordinates>";
+    for(size_t i = 0; i < track.size(); ++i)
+    {
+        os_ << track[i] << ' ';
+    }
+    os_ << "</coordinates>" << std::endl;
+    os_ << "      </LineString>" << std::endl;
+    os_ << "    </Placemark>" << std::endl;
 }

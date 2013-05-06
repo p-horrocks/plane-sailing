@@ -18,9 +18,13 @@ QMAKE_CXXFLAGS += -std=c++0x
 SOURCES += main.cpp \
     util.cpp \
     kmlfile.cpp \
-    pointset.cpp
+    pointset.cpp \
+    track3d.cpp \
+    point3d.cpp
 
 HEADERS += \
     util.h \
     kmlfile.h \
-    pointset.h
+    pointset.h \
+    track3d.h \
+    point3d.h
