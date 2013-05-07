@@ -222,30 +222,32 @@ int main(int argc, char *argv[])
 
     std::vector<double> map(MAP_CELLS_X * MAP_CELLS_Y, 0);
     const int numIterations = (int)pow(10, ACCURACY);
+    for(int i = 0; i < numIterations; ++i)
+    {
+        if((i % 1000) == 0)
+            std::cerr << i << std::endl;
 
-//    for i in range(Iterations):
-//        FixBearing = random.gauss(FixBearingMean, FixBearingSTD)
-//        FixRange = random.gauss(FixRangeMean, FixRangeSTD)
-//        AircraftHeading = random.gauss(AircraftHeadingMean, AircraftHeadingSTD)
-//        SpeedStart = random.gauss(SpeedStartMean, SpeedStartSTD)
-//        SpeedFinish = random.gauss(SpeedFinishMean, SpeedFinishSTD)
-//        ElapsedTime = abs(random.gauss(ElapsedTimeMean, ElapsedTimeSTD))
-//        Wind8000 = random.gauss(Wind8000Mean, Wind8000STD)
-//        Wind6000 = random.gauss(Wind6000Mean, Wind6000STD)
-//        WindDirection = random.gauss(WindDirectionMean, WindDirectionSTD)
-//        BankRateStart = random.gauss(BankRateStartMean, BankRateStartSTD)
-//        BankRateAcceleration = random.gauss(BankRateAccelerationMean, BankRateAccelerationSTD)
+        double time = elapsedTime.sample();
+        planeSpeeds[1].x = time;
+        planeSpeeds[0].y = SPEED_START.sample();
+        planeSpeeds[1].y = SPEED_FINISH.sample();
+        windSpeeds[0].y  = WIND_6000.sample();
+        windSpeeds[1].y  = WIND_8000.sample();
+        CalcTrack(
+                    towerLocation,
+                    TIME_INTEGRATION_STEP,
+                    knownAltitudes,
+                    FIX_RANGE.sample(),
+                    FIX_BEARING.sample(),
+                    time,
+                    AIRCRAFT_HEADING.sample(),
+                    BANK_RATE_START.sample(),
+                    BANK_RATE_ACCEL.sample(),
+                    WIND_DIRECTION.sample(),
+                    windSpeeds,
+                    planeSpeeds
+                    );
 
-//        WindSpeedProfile = [Wind6000,Wind8000]
-//        IASTrack = [SpeedStart,SpeedFinish]
-
-//        TowerFix = (FixRange,FixBearing)
-
-//        CrashE,CrashN,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTime, AltitudeTrack,
-//                                       WindSpeedProfile, AircraftHeading,
-//                                       BankRateStart, BankRateAcceleration,
-//                                       IASTrack, WindDirection, False)
 
 //        BinE = int(math.floor(CrashE/1000.0))-Array_E
 //        BinN = int(math.floor(CrashN/1000.0))-Array_N
@@ -309,5 +311,6 @@ int main(int argc, char *argv[])
 //    pol3.polystyle.outline = 1
 
 //    kml.save("track2quick.kml")
+    }
     return 0;
 }
