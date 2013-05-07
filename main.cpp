@@ -10,6 +10,7 @@
 #include "kmlfile.h"
 #include "track3d.h"
 #include "point3d.h"
+#include "distribution.h"
 
 const int MAP_CELLS_X               = 50;
 const int MAP_CELLS_Y               = 50;
@@ -19,28 +20,28 @@ const double GRID_TO_MAGNETIC       = 11.63; // Grid to magnetic variation - fro
 
 // The range and bearing from Williamstown Tower - from control tower log.
 // Standard deviations are guessed.
-const Distribution FIX_BEARING      = { DEG2RAD(320.0 + GRID_TO_MAGNETIC), DEG2RAD(2) };
-const Distribution FIX_RANGE        = { NMToMetres(48.0), NMToMetres(0.5) };
+const Distribution FIX_BEARING        ( DEG2RAD(320.0 + GRID_TO_MAGNETIC), DEG2RAD(2) );
+const Distribution FIX_RANGE          ( NMToMetres(48.0), NMToMetres(0.5) );
 const time_t FIX_TIME               = stringToTime("19:36:00");
 
 // Aircraft heading, Magnetic bearing, from tower log (I think)
-const Distribution AIRCRAFT_HEADING = { DEG2RAD(140.0 + GRID_TO_MAGNETIC), DEG2RAD(10) };
+const Distribution AIRCRAFT_HEADING   ( DEG2RAD(140.0 + GRID_TO_MAGNETIC), DEG2RAD(10) );
 
 // Air speed of aircraft at start and finish, from John Watson's analysis
-const Distribution SPEED_START      = { KnotsToMPS(145.0), KnotsToMPS(10.0) };
-const Distribution SPEED_FINISH     = { KnotsToMPS(85.0), KnotsToMPS(10.0) };
+const Distribution SPEED_START        ( KnotsToMPS(145.0), KnotsToMPS(10.0) );
+const Distribution SPEED_FINISH       ( KnotsToMPS(85.0), KnotsToMPS(10.0) );
 
 // Crash time, estimated, from John Watson's analysis
 const time_t CRASH_TIME             = stringToTime("19:39:27");
 
 // Wind speed (knots) at 6000 and 8000 as well as dirction, from John Watson's work.
-const Distribution WIND_8000        = { KnotsToMPS(43.0), KnotsToMPS(10.0) };
-const Distribution WIND_6000        = { KnotsToMPS(33.0), KnotsToMPS(10.0) };
-const Distribution WIND_DIRECTION   = { DEG2RAD(230.0 + GRID_TO_MAGNETIC), DEG2RAD(10) };
+const Distribution WIND_8000          ( KnotsToMPS(43.0), KnotsToMPS(10.0) );
+const Distribution WIND_6000          ( KnotsToMPS(33.0), KnotsToMPS(10.0) );
+const Distribution WIND_DIRECTION     ( DEG2RAD(230.0 + GRID_TO_MAGNETIC), DEG2RAD(10) );
 
 // Bank rate at start of simulation (deg/sec) and starting acceleration (deg/sec^2)
-const Distribution BANK_RATE_START  = { DEG2RAD(0.0), DEG2RAD(0.1) };
-const Distribution BANK_RATE_ACCEL  = { DEG2RAD(0.0), DEG2RAD(0.02) };
+const Distribution BANK_RATE_START    ( DEG2RAD(0.0), DEG2RAD(0.1) );
+const Distribution BANK_RATE_ACCEL    ( DEG2RAD(0.0), DEG2RAD(0.02) );
 
 // 4=normal accuracy, 5=high accuracy
 const int ACCURACY = 4;
@@ -51,7 +52,7 @@ const double TIME_INTEGRATION_STEP = 1.0;
 int main(int argc, char *argv[])
 {
     // Estimated time from the simulation start to crash.
-    const Distribution elapsedTime = { difftime(CRASH_TIME, FIX_TIME), 35.0};
+    const Distribution elapsedTime(difftime(CRASH_TIME, FIX_TIME), 35.0);
 
 //    lngDistribution=numpy.zeros((MapArray,MapArray), dtype='int32')
 //    dblDistribution=numpy.zeros((MapArray,MapArray), dtype='float64')
@@ -65,12 +66,12 @@ int main(int argc, char *argv[])
     knownAltitudes.addPoint(difftime(stringToTime("19:39:27"), FIX_TIME), FeetToMetres(5500)); // Altitude versus time track, point 4 (5500 feet at 19:39:27)
 
     PointSet windSpeeds;
-    windSpeeds.addPoint(FeetToMetres(6000), WIND_6000.mean);
-    windSpeeds.addPoint(FeetToMetres(8000), WIND_8000.mean);
+    windSpeeds.addPoint(FeetToMetres(6000), WIND_6000.mean());
+    windSpeeds.addPoint(FeetToMetres(8000), WIND_8000.mean());
 
     PointSet planeSpeeds;
-    planeSpeeds.addPoint(0,                SPEED_START.mean);
-    planeSpeeds.addPoint(elapsedTime.mean, SPEED_FINISH.mean);
+    planeSpeeds.addPoint(0,                  SPEED_START.mean());
+    planeSpeeds.addPoint(elapsedTime.mean(), SPEED_FINISH.mean());
 
     const double MTIRange = NMToMetres(44.0); // MTI range from Williamstown Tower
 
@@ -93,17 +94,17 @@ int main(int argc, char *argv[])
     Track3D track;
     Point3D end = CalcTrack(
                 towerLocation,
-                FIX_RANGE.mean,
-                FIX_BEARING.mean,
+                FIX_RANGE.mean(),
+                FIX_BEARING.mean(),
                 TIME_INTEGRATION_STEP,
-                elapsedTime.mean,
+                elapsedTime.mean(),
                 knownAltitudes,
                 windSpeeds,
-                AIRCRAFT_HEADING.mean,
-                BANK_RATE_START.mean,
-                BANK_RATE_ACCEL.mean,
+                AIRCRAFT_HEADING.mean(),
+                BANK_RATE_START.mean(),
+                BANK_RATE_ACCEL.mean(),
                 planeSpeeds,
-                WIND_DIRECTION.mean,
+                WIND_DIRECTION.mean(),
                 &track
                 );
 

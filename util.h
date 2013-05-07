@@ -7,12 +7,6 @@ class PointSet;
 class Track3D;
 class Point3D;
 
-struct Distribution
-{
-    double mean;
-    double stdDev;
-};
-
 struct Point
 {
     Point() {}
