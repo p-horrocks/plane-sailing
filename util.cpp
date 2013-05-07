@@ -69,18 +69,19 @@ Point AGD66ToWGS84(const Point& pos)
 }
 
 Point3D CalcTrack(
-        const Point&          towerPosition,
-        const RangeBearing&   fix,
-        double                timeStep,
-        double                elapsedTime,
-        const PointSet&       altitudeTrack,
-        const PointSet&       windSpeeds,
-        double                heading,
-        double                initialBankRate,
-        double                bankRateAccel,
-        const PointSet&       planeSpeeds,
-        double                windHeading,
-        Track3D*              track
+        const Point&    towerPosition,
+        double          fixRange,
+        double          fixBearing,
+        double          timeStep,
+        double          elapsedTime,
+        const PointSet& altitudeTrack,
+        const PointSet& windSpeeds,
+        double          heading,
+        double          initialBankRate,
+        double          bankRateAccel,
+        const PointSet& planeSpeeds,
+        double          windHeading,
+        Track3D*        track
         )
 {
     if(track != NULL)
@@ -89,8 +90,8 @@ Point3D CalcTrack(
     }
 
     // Set up the initial conditions.
-    double x        = towerPosition.x + fix.range * sin(fix.bearing);
-    double y        = towerPosition.y + fix.range * cos(fix.bearing);
+    double x        = towerPosition.x + fixRange * sin(fixBearing);
+    double y        = towerPosition.y + fixRange * cos(fixBearing);
     double z        = 0.0;
     double time     = 0.0;
     double bankRate = initialBankRate;

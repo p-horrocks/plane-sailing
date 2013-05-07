@@ -13,18 +13,6 @@ struct Distribution
     double stdDev;
 };
 
-struct Range
-{
-    double start;
-    double end;
-};
-
-struct RangeBearing
-{
-    double range;
-    double bearing;
-};
-
 struct Point
 {
     Point() {}
@@ -45,19 +33,21 @@ double MPSToKnots(double MPS);
 Point MGRSToUTM(const Point& pos, const std::string& InputDatum, const std::string& OutputDatum);
 Point WGS84ToAGD66(const Point& pos);
 Point AGD66ToWGS84(const Point& pos);
+
 Point3D CalcTrack(
-        const Point&          towerPosition,
-        const RangeBearing&   fix,
-        double                timeStep,
-        double                elapsedTime,
-        const PointSet&       altitudeTrack, // x=time     y=altitude
-        const PointSet&       windSpeeds,    // x=altitude y=wind speed
-        double                heading,
-        double                initialBankRate,
-        double                bankRateAccel,
-        const PointSet&       planeSpeeds,   // x=time     y=speed
-        double                windHeading,
-        Track3D*              track = NULL
+        const Point&    towerPosition,
+        double          fixRange,
+        double          fixBearing,
+        double          timeStep,
+        double          elapsedTime,
+        const PointSet& altitudeTrack, // x=time     y=altitude
+        const PointSet& windSpeeds,    // x=altitude y=wind speed
+        double          heading,
+        double          initialBankRate,
+        double          bankRateAccel,
+        const PointSet& planeSpeeds,   // x=time     y=speed
+        double          windHeading,
+        Track3D*        track = NULL
         );
 
 Point utmToLatLng(int zone, const Point& en, bool northernHemisphere = true);

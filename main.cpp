@@ -80,8 +80,6 @@ int main(int argc, char *argv[])
         towerLocation = Point(TOWER_LOCATION.x, TOWER_LOCATION.y - 100000.0);
     }
 
-    RangeBearing towerFix = { FIX_RANGE.mean, FIX_BEARING.mean };
-
 //    Deviation = numpy.radians(2.0)
 
 //    MTI_E1 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]+Deviation)
@@ -95,7 +93,8 @@ int main(int argc, char *argv[])
     Track3D track;
     Point3D end = CalcTrack(
                 towerLocation,
-                towerFix,
+                FIX_RANGE.mean,
+                FIX_BEARING.mean,
                 TIME_INTEGRATION_STEP,
                 elapsedTime.mean,
                 knownAltitudes,
