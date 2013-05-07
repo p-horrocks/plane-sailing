@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     end.convertAMG66toWGS84();
     kml.addPoint(end, "Nominal crash location");
 
-//    #MTI Line - If beyond this it will not have a moving target indicator
+    //    #MTI Line - If beyond this it will not have a moving target indicator
 //    E1,N1 = MGRSToUTM(MTI_E1,MTI_N1,"AGD66","WGS84")
 //    coords1 = utmToLatLng(56,E1,N1,0)
 //    E2,N2 = MGRSToUTM(MTI_E2,MTI_N2,"AGD66","WGS84")
@@ -139,45 +139,71 @@ int main(int argc, char *argv[])
         double bearing;
         double time;
         double windSpeed;
+        double heading;
+        double bankRate;
+        double bankAccel;
+        double startSpeed;
+        double endSpeed;
+        double windDir;
         const char* name;
     }
     stdDevTracks[] =
     {
-        { 1, 0, 0, 0, "Tower range +/-1 STD" } ,
-        { 0, 1, 0, 0, "Tower bearing +/-1 STD" } ,
-        { 0, 0, 1, 0, "Elapsed time +/-1 STD" } ,
-        { 0, 0, 0, 1, "Wind speed +/-1 STD" } ,
-        { 0, 0, 0, 0, NULL }
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tower range +/-1 STD" } ,
+        { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, "Tower bearing +/-1 STD" } ,
+        { 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, "Elapsed time +/-1 STD" } ,
+        { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, "Wind speed +/-1 STD" } ,
+        { 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, "Aircraft heading +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, "Bank rate +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, "Bank rate acceleration +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, "Start speed +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, "End speed +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, "Wind direction +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL }
     };
 
     for(int i = 0; stdDevTracks[i].name; ++i)
     {
+        double time = elapsedTime.offsetMean(stdDevTracks[i].time);
+
+        planeSpeeds[1].x = time;
+        planeSpeeds[0].y = SPEED_START.offsetMean(stdDevTracks[i].startSpeed);
+        planeSpeeds[1].y = SPEED_FINISH.offsetMean(stdDevTracks[i].endSpeed);
+        windSpeeds[0].y  = WIND_6000.offsetMean(stdDevTracks[i].windSpeed);
+        windSpeeds[1].y  = WIND_8000.offsetMean(stdDevTracks[i].windSpeed);
         CalcTrack(
                     towerLocation,
                     TIME_INTEGRATION_STEP,
                     knownAltitudes,
                     FIX_RANGE.offsetMean(stdDevTracks[i].range),
                     FIX_BEARING.offsetMean(stdDevTracks[i].bearing),
-                    elapsedTime.offsetMean(stdDevTracks[i].time),
-                    AIRCRAFT_HEADING.mean(),
-                    BANK_RATE_START.mean(),
-                    BANK_RATE_ACCEL.mean(),
-                    WIND_DIRECTION.mean(),
+                    time,
+                    AIRCRAFT_HEADING.offsetMean(stdDevTracks[i].heading),
+                    BANK_RATE_START.offsetMean(stdDevTracks[i].bankRate),
+                    BANK_RATE_ACCEL.offsetMean(stdDevTracks[i].bankAccel),
+                    WIND_DIRECTION.offsetMean(stdDevTracks[i].windDir),
                     windSpeeds,
                     planeSpeeds,
                     &track1
                     );
+
+        time = elapsedTime.offsetMean(-stdDevTracks[i].time);
+        planeSpeeds[1].x = time;
+        planeSpeeds[0].y = SPEED_START.offsetMean(-stdDevTracks[i].startSpeed);
+        planeSpeeds[1].y = SPEED_FINISH.offsetMean(-stdDevTracks[i].endSpeed);
+        windSpeeds[0].y  = WIND_6000.offsetMean(-stdDevTracks[i].windSpeed);
+        windSpeeds[1].y  = WIND_8000.offsetMean(-stdDevTracks[i].windSpeed);
         CalcTrack(
                     towerLocation,
                     TIME_INTEGRATION_STEP,
                     knownAltitudes,
                     FIX_RANGE.offsetMean(-stdDevTracks[i].range),
                     FIX_BEARING.offsetMean(-stdDevTracks[i].bearing),
-                    elapsedTime.offsetMean(-stdDevTracks[i].time),
-                    AIRCRAFT_HEADING.mean(),
-                    BANK_RATE_START.mean(),
-                    BANK_RATE_ACCEL.mean(),
-                    WIND_DIRECTION.mean(),
+                    time,
+                    AIRCRAFT_HEADING.offsetMean(-stdDevTracks[i].heading),
+                    BANK_RATE_START.offsetMean(-stdDevTracks[i].bankRate),
+                    BANK_RATE_ACCEL.offsetMean(-stdDevTracks[i].bankAccel),
+                    WIND_DIRECTION.offsetMean(-stdDevTracks[i].windDir),
                     windSpeeds,
                     planeSpeeds,
                     &track2
@@ -188,193 +214,6 @@ int main(int argc, char *argv[])
         track2.reverse();
         kml.addPolygon(track1 + track2, stdDevTracks[i].name, "99ff7777");
     }
-
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, [Wind6000Mean+Wind6000STD,Wind8000Mean+Wind8000STD],
-//                                       AircraftHeadingMean, BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Wind Speed", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Wind Speed",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, [Wind6000Mean-Wind6000STD,Wind8000Mean-Wind8000STD],
-//                                       AircraftHeadingMean, BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Wind Speed", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Wind Speed",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean+AircraftHeadingSTD,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Aircraft Heading", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Aircraft Heading",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean-AircraftHeadingSTD,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Aircraft Heading", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Aircraft Heading",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    if BankRateStartSTD>0:
-//        E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean+BankRateStartSTD, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//        KmlTrack = kmlFolder.newlinestring(name = "+1 STD Bank Rate", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//        KmlTrack.linestyle.width = STD_Line_Width
-//        KmlTrack.linestyle.color = STD_Line_Colour
-//        coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//        kmlFolder.newpoint(name="+1 STD Bank Rate",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//        E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean-BankRateStartSTD, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//        KmlTrack = kmlFolder.newlinestring(name = "-1 STD Bank Rate", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//        KmlTrack.linestyle.width = STD_Line_Width
-//        KmlTrack.linestyle.color = STD_Line_Colour
-//        coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//        kmlFolder.newpoint(name="-1 STD Bank Rate",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    if BankRateAccelerationSTD>0:
-//        E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean+BankRateAccelerationSTD,
-//                                       IASTrack, WindDirectionMean, True)
-
-//        KmlTrack = kmlFolder.newlinestring(name = "+1 STD Bank Rate Acceleration", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//        KmlTrack.linestyle.width = STD_Line_Width
-//        KmlTrack.linestyle.color = STD_Line_Colour
-//        coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//        kmlFolder.newpoint(name="+1 STD Bank Rate Acceleration",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//        E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean-BankRateAccelerationSTD,
-//                                       IASTrack, WindDirectionMean, True)
-
-//        KmlTrack = kmlFolder.newlinestring(name = "-1 STD Bank Rate Acceleration", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//        KmlTrack.linestyle.width = STD_Line_Width
-//        KmlTrack.linestyle.color = STD_Line_Colour
-//        coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//        kmlFolder.newpoint(name="-1 STD Bank Rate Acceleration",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       [SpeedStartMean+SpeedStartSTD,SpeedFinishMean], WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Start Speed", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Start Speed",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       [SpeedStartMean-SpeedStartSTD,SpeedFinishMean], WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Start Speed", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Start Speed",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       [SpeedStartMean,SpeedFinishMean+SpeedFinishSTD], WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Finish Speed", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Finish Speed",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       [SpeedStartMean,SpeedFinishMean-SpeedFinishSTD], WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Finish Speed", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Finish Speed",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean+WindDirectionSTD, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Wind Direction", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Wind Direction",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean-WindDirectionSTD, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Wind Direction", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Wind Direction",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    #Now let's start doing some calcs!
 
 //    kmlFolder2 = kml.newfolder(name = "Stochastic Points", description = "1 in 100 of the stochastic points.")
 

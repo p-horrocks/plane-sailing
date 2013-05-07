@@ -22,6 +22,9 @@ public:
     // points at the nearest end are extrapolated.
     double interpolate(double x) const;
 
+    Point& operator [] (size_t idx) { return points_[idx]; }
+    const Point& operator [] (size_t idx) const { return points_[idx]; }
+
 protected:
     static double interpolate(double x1, double y1, double x2, double y2, double x);
 
