@@ -89,10 +89,9 @@ Point3D CalcTrack(
     }
 
     // Set up the initial conditions.
-    Point3D position;
-    position.x_     = towerPosition.x + fix.range * sin(fix.bearing);
-    position.y_     = towerPosition.y + fix.range * cos(fix.bearing);
-    position.z_     = 0.0;
+    double x        = towerPosition.x + fix.range * sin(fix.bearing);
+    double y        = towerPosition.y + fix.range * cos(fix.bearing);
+    double z        = 0.0;
     double time     = 0.0;
     double bankRate = initialBankRate;
     windHeading     = (M_PI / -2) - windHeading; // reversed as wind direction is where the wind is FROM
@@ -118,22 +117,20 @@ Point3D CalcTrack(
         double planeSpeed = planeSpeeds.interpolate(time);
 
         // Update the simulated plane location.
-        heading     += bankRate * thisStep;
-        bankRate    += bankRateAccel * thisStep;
-        double hdg  = (M_PI / 2) - heading;
-        position.z_ = altitude;
-        position.x_ += thisStep * (planeSpeed * cos(hdg) + windSpeed * cosWind);
-        position.y_ += thisStep * (planeSpeed * sin(hdg) + windSpeed * sinWind);
+        heading    += bankRate * thisStep;
+        bankRate   += bankRateAccel * thisStep;
+        double hdg = (M_PI / 2) - heading;
+        z          = altitude;
+        x          += thisStep * (planeSpeed * cos(hdg) + windSpeed * cosWind);
+        y          += thisStep * (planeSpeed * sin(hdg) + windSpeed * sinWind);
 
         if(track != NULL)
         {
-            Point p = MGRSToUTM(Point(position.x_, position.y_), "AGD66", "WGS84");
-            p = utmToLatLng(56, p, false);
-            track->addPoint(p.x, p.y, position.z_);
+            track->addPoint(x, y, z);
         }
     }
 
-    return position;
+    return Point3D(x, y, z);
 }
 
 //def GetContourPoints(xarray,yarray,m,level):

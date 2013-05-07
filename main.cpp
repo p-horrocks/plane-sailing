@@ -109,12 +109,11 @@ int main(int argc, char *argv[])
                 );
 
     std::cout << "Nominal Crash Location: " << end.x_ << " " << end.y_ << std::endl;
-    kml.addTrack(track, "99ff7777");
+    track.convertAMG66toWGS84();
+    kml.addTrack(track, "Nominal track", "99ff7777");
+    end.convertAMG66toWGS84();
+    kml.addPoint(end, "Nominal crash location");
 
-//    KmlTrack = kml.newlinestring(name = "Nominal Track", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = 10
-//    KmlTrack.linestyle.color = '99ff7777'
 //    coordsUTM = MGRSToUTM(Nominal_E,Nominal_N,"AGD66","WGS84")
 //    kml.newpoint(name="Nominal Crash Location",
 //                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])

@@ -20,11 +20,15 @@ SOURCES += main.cpp \
     kmlfile.cpp \
     pointset.cpp \
     track3d.cpp \
-    point3d.cpp
+    point3d.cpp \
+    point2d.cpp
 
 HEADERS += \
     util.h \
     kmlfile.h \
     pointset.h \
     track3d.h \
-    point3d.h
+    point3d.h \
+    point2d.h
+
+LIBS += -lgdal

@@ -11,10 +11,13 @@ public:
 
     void clear();
     void addPoint(double x, double y, double z);
+    void setEnd(double x, double y, double z);
 
     bool empty() const { return xVals_.empty(); }
     size_t size() const { return xVals_.size(); }
     Point3D operator [] (size_t i) const { return Point3D(xVals_[i], yVals_[i], zVals_[i]); }
+
+    void convertAMG66toWGS84();
 
 protected:
     // The points are kept in separate arrays to be easier to pass to GDAL.

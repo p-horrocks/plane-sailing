@@ -34,9 +34,20 @@ KmlFile::~KmlFile()
     os_ << "</kml>" << std::endl;
 }
 
-void KmlFile::addTrack(const Track3D& track, const char* colour)
+void KmlFile::addPoint(const Point3D& pt, const char* name)
 {
     os_ << "    <Placemark>" << std::endl;
+    os_ << "      <name>" << name << "</name>" << std::endl;
+    os_ << "      <Point>" << std::endl;
+    os_ << "        <coordinates>" << (Point2D)pt << "</coordinates>" << std::endl;
+    os_ << "      </Point>" << std::endl;
+    os_ << "    </Placemark>" << std::endl;
+}
+
+void KmlFile::addTrack(const Track3D& track, const char* name, const char* colour)
+{
+    os_ << "    <Placemark>" << std::endl;
+    os_ << "      <name>" << name << "</name>" << std::endl;
     os_ << "      <LineString>" << std::endl;
     os_ << "        <LineStyle>" << std::endl;
     os_ << "          <color>" << colour << "</color>" << std::endl;
