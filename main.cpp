@@ -114,10 +114,6 @@ int main(int argc, char *argv[])
     end.convertAMG66toWGS84();
     kml.addPoint(end, "Nominal crash location");
 
-//    coordsUTM = MGRSToUTM(Nominal_E,Nominal_N,"AGD66","WGS84")
-//    kml.newpoint(name="Nominal Crash Location",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
 //    #MTI Line - If beyond this it will not have a moving target indicator
 //    E1,N1 = MGRSToUTM(MTI_E1,MTI_N1,"AGD66","WGS84")
 //    coords1 = utmToLatLng(56,E1,N1,0)

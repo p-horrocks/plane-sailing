@@ -51,6 +51,7 @@ void KmlFile::addTrack(const Track3D& track, const char* name, const char* colou
     os_ << "      <LineString>" << std::endl;
     os_ << "        <LineStyle>" << std::endl;
     os_ << "          <color>" << colour << "</color>" << std::endl;
+    os_ << "          <width>1</width>" << std::endl;
     os_ << "        </LineStyle>" << std::endl;
     os_ << "        <altitudeMode>absolute</altitudeMode>" << std::endl;
     os_ << "        <coordinates>";
