@@ -63,3 +63,24 @@ void KmlFile::addTrack(const Track3D& track, const char* name, const char* colou
     os_ << "      </LineString>" << std::endl;
     os_ << "    </Placemark>" << std::endl;
 }
+
+void KmlFile::addPolygon(const Track3D& track, const char* name, const char* colour)
+{
+    os_ << "    <Placemark>" << std::endl;
+    os_ << "      <name>" << name << "</name>" << std::endl;
+    os_ << "      <Polygon>" << std::endl;
+    os_ << "        <PolyStyle>" << std::endl;
+    os_ << "          <color>" << colour << "</color>" << std::endl;
+    os_ << "          <fill>1</fill>" << std::endl;
+    os_ << "          <outline>0</outline>" << std::endl;
+    os_ << "        </PolyStyle>" << std::endl;
+    os_ << "        <altitudeMode>absolute</altitudeMode>" << std::endl;
+    os_ << "        <outerBoundaryIs><LinearRing><coordinates>";
+    for(size_t i = 0; i < track.size(); ++i)
+    {
+        os_ << track[i] << ' ';
+    }
+    os_ << "</coordinates></LinearRing></outerBoundaryIs>" << std::endl;
+    os_ << "      </Polygon>" << std::endl;
+    os_ << "    </Placemark>" << std::endl;
+}

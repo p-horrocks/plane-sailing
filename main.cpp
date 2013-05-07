@@ -89,14 +89,14 @@ int main(int argc, char *argv[])
 //    MTI_N2 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]-Deviation)
 
     KmlFile kml("track.kml");
+    Track3D track1;
+    Track3D track2;
 
     // Nominal Track
-    Track3D track;
     Point3D end = CalcTrack(
                 towerLocation,
                 TIME_INTEGRATION_STEP,
                 knownAltitudes,
-
                 FIX_RANGE.mean(),
                 FIX_BEARING.mean(),
                 elapsedTime.mean(),
@@ -106,13 +106,12 @@ int main(int argc, char *argv[])
                 WIND_DIRECTION.mean(),
                 windSpeeds,
                 planeSpeeds,
-
-                &track
+                &track1
                 );
 
     std::cout << "Nominal Crash Location: " << end.x_ << " " << end.y_ << std::endl;
-    track.convertAMG66toWGS84();
-    kml.addTrack(track, "Nominal track", "99ff7777");
+    track1.convertAMG66toWGS84();
+    kml.addTrack(track1, "Nominal track", "99ff7777");
     end.convertAMG66toWGS84();
     kml.addPoint(end, "Nominal crash location");
 
@@ -134,89 +133,62 @@ int main(int argc, char *argv[])
 //    STD_Line_Width = 2
 //    STD_Line_Colour = '99888888'
 
-//    E,N,Track = CalcTrack(TowerPosition, (FixRangeMean+FixRangeSTD,FixBearingMean),
-//                                TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
+    const struct
+    {
+        double range;
+        double bearing;
+        double time;
+        double windSpeed;
+        const char* name;
+    }
+    stdDevTracks[] =
+    {
+        { 1, 0, 0, 0, "Tower range +/-1 STD" } ,
+        { 0, 1, 0, 0, "Tower bearing +/-1 STD" } ,
+        { 0, 0, 1, 0, "Elapsed time +/-1 STD" } ,
+        { 0, 0, 0, 1, "Wind speed +/-1 STD" } ,
+        { 0, 0, 0, 0, NULL }
+    };
 
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Tower Range", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Tower Range",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
+    for(int i = 0; stdDevTracks[i].name; ++i)
+    {
+        CalcTrack(
+                    towerLocation,
+                    TIME_INTEGRATION_STEP,
+                    knownAltitudes,
+                    FIX_RANGE.offsetMean(stdDevTracks[i].range),
+                    FIX_BEARING.offsetMean(stdDevTracks[i].bearing),
+                    elapsedTime.offsetMean(stdDevTracks[i].time),
+                    AIRCRAFT_HEADING.mean(),
+                    BANK_RATE_START.mean(),
+                    BANK_RATE_ACCEL.mean(),
+                    WIND_DIRECTION.mean(),
+                    windSpeeds,
+                    planeSpeeds,
+                    &track1
+                    );
+        CalcTrack(
+                    towerLocation,
+                    TIME_INTEGRATION_STEP,
+                    knownAltitudes,
+                    FIX_RANGE.offsetMean(-stdDevTracks[i].range),
+                    FIX_BEARING.offsetMean(-stdDevTracks[i].bearing),
+                    elapsedTime.offsetMean(-stdDevTracks[i].time),
+                    AIRCRAFT_HEADING.mean(),
+                    BANK_RATE_START.mean(),
+                    BANK_RATE_ACCEL.mean(),
+                    WIND_DIRECTION.mean(),
+                    windSpeeds,
+                    planeSpeeds,
+                    &track2
+                    );
 
-//    E,N,Track = CalcTrack(TowerPosition, (FixRangeMean-FixRangeSTD,FixBearingMean),
-//                                TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
+        track1.convertAMG66toWGS84();
+        track2.convertAMG66toWGS84();
+        track2.reverse();
+        kml.addPolygon(track1 + track2, stdDevTracks[i].name, "99ff7777");
+    }
 
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Tower Range", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Tower Range",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, (FixRangeMean,FixBearingMean+FixBearingSTD),
-//                                TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Tower Bearing", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Tower Bearing",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, (FixRangeMean,FixBearingMean-FixBearingSTD),
-//                                TimeIntegrationStep,
-//                                       ElapsedTimeMean, AltitudeTrack, WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Tower Bearing", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="-1 STD Tower Bearing",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean+ElapsedTimeSTD, AltitudeTrack,
-//                                       WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "+1 STD Elapsed Time", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Elapsed Time",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
-
-//    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
-//                                       ElapsedTimeMean-ElapsedTimeSTD, AltitudeTrack,
-//                                       WindSpeedProfile, AircraftHeadingMean,
-//                                       BankRateStartMean, BankRateAccelerationMean,
-//                                       IASTrack, WindDirectionMean, True)
-
-//    KmlTrack = kmlFolder.newlinestring(name = "-1 STD Elapsed Time", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = STD_Line_Width
-//    KmlTrack.linestyle.color = STD_Line_Colour
-//    coordsUTM = MGRSToUTM(E,N,"AGD66","WGS84")
-//    kmlFolder.newpoint(name="+1 STD Elapsed Time",
-//                       coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
 
 //    E,N,Track = CalcTrack(TowerPosition, TowerFix, TimeIntegrationStep,
 //                                       ElapsedTimeMean, AltitudeTrack, [Wind6000Mean+Wind6000STD,Wind8000Mean+Wind8000STD],

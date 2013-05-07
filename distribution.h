@@ -7,6 +7,7 @@ public:
     Distribution(double mean, double stdDev) : mean_(mean), stdDev_(stdDev) {}
 
     double mean() const { return mean_; }
+    double offsetMean(double stdDevs) const;
 
 protected:
     double mean_;
