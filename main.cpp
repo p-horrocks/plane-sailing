@@ -94,17 +94,19 @@ int main(int argc, char *argv[])
     Track3D track;
     Point3D end = CalcTrack(
                 towerLocation,
+                TIME_INTEGRATION_STEP,
+                knownAltitudes,
+
                 FIX_RANGE.mean(),
                 FIX_BEARING.mean(),
-                TIME_INTEGRATION_STEP,
                 elapsedTime.mean(),
-                knownAltitudes,
-                windSpeeds,
                 AIRCRAFT_HEADING.mean(),
                 BANK_RATE_START.mean(),
                 BANK_RATE_ACCEL.mean(),
-                planeSpeeds,
                 WIND_DIRECTION.mean(),
+                windSpeeds,
+                planeSpeeds,
+
                 &track
                 );
 

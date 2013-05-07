@@ -29,18 +29,21 @@ Point WGS84ToAGD66(const Point& pos);
 Point AGD66ToWGS84(const Point& pos);
 
 Point3D CalcTrack(
+        // Fixed parameters
         const Point&    towerPosition,
+        double          timeStep,
+        const PointSet& altitudeTrack, // x=time     y=altitude
+        // Varying parameters
         double          fixRange,
         double          fixBearing,
-        double          timeStep,
         double          elapsedTime,
-        const PointSet& altitudeTrack, // x=time     y=altitude
-        const PointSet& windSpeeds,    // x=altitude y=wind speed
         double          heading,
         double          initialBankRate,
         double          bankRateAccel,
-        const PointSet& planeSpeeds,   // x=time     y=speed
         double          windHeading,
+        const PointSet& windSpeeds,    // x=altitude y=wind speed
+        const PointSet& planeSpeeds,   // x=time     y=speed
+        // Returned values
         Track3D*        track = NULL
         );
 

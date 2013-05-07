@@ -70,17 +70,19 @@ Point AGD66ToWGS84(const Point& pos)
 
 Point3D CalcTrack(
         const Point&    towerPosition,
+        double          timeStep,
+        const PointSet& altitudeTrack,
+
         double          fixRange,
         double          fixBearing,
-        double          timeStep,
         double          elapsedTime,
-        const PointSet& altitudeTrack,
-        const PointSet& windSpeeds,
         double          heading,
         double          initialBankRate,
         double          bankRateAccel,
-        const PointSet& planeSpeeds,
         double          windHeading,
+        const PointSet& windSpeeds,
+        const PointSet& planeSpeeds,
+
         Track3D*        track
         )
 {
