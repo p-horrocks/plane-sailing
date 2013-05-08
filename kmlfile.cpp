@@ -82,6 +82,30 @@ void KmlFile::addTrack(const Track3D& track, const char* name, const char* colou
     os_ << "    </Placemark>" << std::endl;
 }
 
+void KmlFile::addMultiTrack(const std::vector<Track3D>& tracks, const char* name, const char* colour)
+{
+    os_ << "    <Placemark>" << std::endl;
+    os_ << "      <name>" << name << "</name>" << std::endl;
+    os_ << "      <MultiGeometry>" << std::endl;
+    for(auto track : tracks)
+    {
+        os_ << "        <LineString>" << std::endl;
+        os_ << "          <LineStyle>" << std::endl;
+        os_ << "            <color>" << colour << "</color>" << std::endl;
+        os_ << "            <width>1</width>" << std::endl;
+        os_ << "          </LineStyle>" << std::endl;
+        os_ << "          <coordinates>";
+        for(size_t i = 0; i < track.size(); ++i)
+        {
+            os_ << (Point2D)track[i] << ' ';
+        }
+        os_ << "</coordinates>" << std::endl;
+        os_ << "        </LineString>" << std::endl;
+    }
+    os_ << "      </MultiGeometry>" << std::endl;
+    os_ << "    </Placemark>" << std::endl;
+}
+
 void KmlFile::addPolygon(const Track3D& track, const char* name, const char* colour)
 {
     os_ << "    <Placemark>" << std::endl;

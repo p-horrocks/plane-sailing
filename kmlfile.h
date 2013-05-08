@@ -2,6 +2,7 @@
 #define KMLFILE_H
 
 #include <fstream>
+#include <vector>
 class Track3D;
 class Point3D;
 
@@ -15,6 +16,7 @@ public:
 
     void addPoint(const Point3D& pt, const char* name);
     void addTrack(const Track3D& track, const char* name, const char* colour);
+    void addMultiTrack(const std::vector<Track3D>& tracks, const char* name, const char* colour);
     void addPolygon(const Track3D& track, const char* name, const char* colour);
 
 protected:

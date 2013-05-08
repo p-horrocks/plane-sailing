@@ -13,8 +13,11 @@
 #include "point3d.h"
 #include "distribution.h"
 
+// Size of the sample grid.
 const int MAP_CELLS_X               = 50;
 const int MAP_CELLS_Y               = 50;
+const double METRES_PER_CELL        = 1000;
+
 const std::string TOWER_GRID_SQUARE = "56HLJ";
 const Point TOWER_LOCATION          = { 90345.0, 69908.0 }; // Location of Willianstown Tower, in UTM coords (AGD66) - from map
 const double GRID_TO_MAGNETIC       = 11.63; // Grid to magnetic variation - from map. Defined as positive where magnetic angle is clockwise from grid north.
@@ -35,7 +38,7 @@ const Distribution SPEED_FINISH       ( KnotsToMPS(85.0), KnotsToMPS(10.0) );
 // Crash time, estimated, from John Watson's analysis
 const time_t CRASH_TIME             = stringToTime("19:39:27");
 
-// Wind speed (knots) at 6000 and 8000 as well as dirction, from John Watson's work.
+// Wind speed (knots) at 6000 and 8000 as well as direction, from John Watson's work.
 const Distribution WIND_8000          ( KnotsToMPS(43.0), KnotsToMPS(10.0) );
 const Distribution WIND_6000          ( KnotsToMPS(33.0), KnotsToMPS(10.0) );
 const Distribution WIND_DIRECTION     ( DEG2RAD(230.0 + GRID_TO_MAGNETIC), DEG2RAD(10) );
@@ -129,12 +132,6 @@ int main(int argc, char *argv[])
 //    KmlTrack.linestyle.width = 20
 //    KmlTrack.linestyle.color = '99ff7777'
 
-
-//    #1STD Tracks
-//    kmlFolder = kml.newfolder(name = "+/-1 STD Tracks", description = "A set of tracks showing +/-1 STD of all key parameters. This gives a guide as to what the signficant variables are.")
-//    STD_Line_Width = 2
-//    STD_Line_Colour = '99888888'
-
     const struct
     {
         double range;
@@ -222,11 +219,41 @@ int main(int argc, char *argv[])
 //    Array_N = int(math.floor(Nominal_N/1000.0))-int(MapArray*0.5)
 
     const int numIterations = (int)pow(10, ACCURACY);
-    kml.startFolder("Stochastic points (sample)");
     int ptFreq = numIterations / 100;
 
-    std::vector<double> map(MAP_CELLS_X * MAP_CELLS_Y, 0);
+    std::vector<double> grid(MAP_CELLS_X * MAP_CELLS_Y, 0);
+    const Point2D gridOrigin(
+                nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
+                nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
+                );
+    const Point2D gridEnd(
+                gridOrigin.x_ + (MAP_CELLS_X * METRES_PER_CELL),
+                gridOrigin.y_ + (MAP_CELLS_Y * METRES_PER_CELL)
+                );
 
+    std::vector<Track3D> gridLines;
+    for(int col = 0; col <= MAP_CELLS_X; ++col)
+    {
+        double x = gridOrigin.x_ + (col * METRES_PER_CELL);
+        Track3D line;
+        line.addPoint(x, gridOrigin.y_, 0);
+        line.addPoint(x, gridEnd.y_, 0);
+        line.convertAMG66toWGS84();
+        gridLines.push_back(line);
+    }
+    for(int row = 0; row <= MAP_CELLS_Y; ++row)
+    {
+        double y = gridOrigin.y_ + (row * METRES_PER_CELL);
+        Track3D line;
+        line.addPoint(gridOrigin.x_, y, 0);
+        line.addPoint(gridEnd.x_, y, 0);
+        line.convertAMG66toWGS84();
+        gridLines.push_back(line);
+    }
+    kml.startFolder("Grid");
+    kml.addMultiTrack(gridLines, "Stochastic grid", "99ff7777");
+
+    kml.startFolder("Stochastic points (sample)");
     for(int i = 0; i < numIterations; ++i)
     {
         double time = elapsedTime.sample();
@@ -250,10 +277,12 @@ int main(int argc, char *argv[])
                     planeSpeeds
                     );
 
-        //        BinE = int(math.floor(CrashE/1000.0))-Array_E
-        //        BinN = int(math.floor(CrashN/1000.0))-Array_N
-        //        if BinE >= 0 and BinN >= 0 and BinE <= MapArray-1 and BinN <= MapArray-1:
-        //            lngDistribution[BinE, BinN] += 1
+        int col = std::round((crashPos.x_ - gridOrigin.x_) / METRES_PER_CELL);
+        int row = std::round((crashPos.y_ - gridOrigin.y_) / METRES_PER_CELL);
+        if((col >= 0) && (row >= 0) && (col < MAP_CELLS_X) && (row < MAP_CELLS_Y))
+        {
+            grid[col + (row * MAP_CELLS_X)] += 1.0;
+        }
 
         if((i % ptFreq) == 0)
         {
