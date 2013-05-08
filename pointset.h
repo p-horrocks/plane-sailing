@@ -2,16 +2,11 @@
 #define POINTSET_H
 
 #include <vector>
+#include "point2d.h"
 
 class PointSet
 {
 public:
-    struct Point
-    {
-        double x;
-        double y;
-    };
-
     PointSet();
 
     // Points must be added in strictly increasing x order.
@@ -22,13 +17,11 @@ public:
     // points at the nearest end are extrapolated.
     double interpolate(double x) const;
 
-    Point& operator [] (int idx) { return points_[idx]; }
-    const Point& operator [] (int idx) const { return points_[idx]; }
+    Point2D& operator [] (int idx) { return points_[idx]; }
+    const Point2D& operator [] (int idx) const { return points_[idx]; }
 
 protected:
-    static double interpolate(double x1, double y1, double x2, double y2, double x);
-
-    std::vector<Point> points_;
+    std::vector<Point2D> points_;
 };
 
 #endif // POINTSET_H

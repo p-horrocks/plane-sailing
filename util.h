@@ -6,31 +6,15 @@
 class PointSet;
 class Track3D;
 class Point3D;
+class Point2D;
 
-struct Point
-{
-    Point() {}
-    Point(double x_, double y_) : x(x_), y(y_) {}
-
-    double x;
-    double y;
-};
-
-#define DEG2RAD(x) ((x) * M_PI / 180.0)
-#define RAD2DEG(x) ((x) * 180.0 / M_PI)
-
-double FeetToMetres(double Feet);
-double MetresToFeet(double Metres);
-double NMToMetres(double NM);
-double KnotsToMPS(double Knots);
-double MPSToKnots(double MPS);
-Point MGRSToUTM(const Point& pos, const std::string& InputDatum, const std::string& OutputDatum);
-Point WGS84ToAGD66(const Point& pos);
-Point AGD66ToWGS84(const Point& pos);
+Point2D MGRSToUTM(const Point2D& pos, const std::string& InputDatum, const std::string& OutputDatum);
+Point2D WGS84ToAGD66(const Point2D& pos);
+Point2D AGD66ToWGS84(const Point2D& pos);
 
 Point3D CalcTrack(
         // Fixed parameters
-        const Point&    towerPosition,
+        const Point2D&  towerPosition,
         double          timeStep,
         const PointSet& altitudeTrack, // x=time     y=altitude
         // Varying parameters
@@ -47,8 +31,6 @@ Point3D CalcTrack(
         Track3D*        track = NULL
         );
 
-Point utmToLatLng(int zone, const Point& en, bool northernHemisphere = true);
-
-time_t stringToTime(const char* timeStr);
+Point2D utmToLatLng(int zone, const Point2D& en, bool northernHemisphere = true);
 
 #endif // UTIL_H

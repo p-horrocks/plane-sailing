@@ -12,9 +12,9 @@ namespace
 class CompareX
 {
 public:
-    bool operator () (const PointSet::Point& p1, const PointSet::Point& p2) const
+    bool operator () (const Point2D& p1, const Point2D& p2) const
     {
-        return p1.x < p2.x;
+        return p1.x_ < p2.x_;
     }
 };
 
@@ -27,38 +27,43 @@ PointSet::PointSet()
 void PointSet::addPoint(double x, double y)
 {
     // Points must be added in x order.
-    assert(points_.empty() || (x > points_.back().x));
-
-    Point p = { x, y };
-    points_.push_back(p);
+    assert(points_.empty() || (x > points_.back().x_));
+    points_.push_back(Point2D(x, y));
 }
 
 double PointSet::interpolate(double x) const
 {
-    Point p = { x, 0 };
-    auto i = std::lower_bound(points_.begin(), points_.end(), p, CompareX());
-    if(i == points_.end())
+    if(points_.size() == 2)
     {
-        i = points_.end() - 1;
-    }
-    else if(i->x == x)
-    {
-        return i->y;
-    }
-    else if(i == points_.begin())
-    {
-        ++i;
+        // Only two points in the set. Just interpolate these.
+        const Point2D& p1 = points_.front();
+        const Point2D& p2 = points_.back();
+        return (p2.y_ - p1.y_) / (p2.x_ - p1.x_) * (x - p1.x_) + p1.y_;
     }
     else
     {
+        // Find the two points on either side (x-wise) of the requested x and
+        // interpolate between those.
+        Point2D p(x, 0);
+        auto i = std::lower_bound(points_.begin(), points_.end(), p, CompareX());
+        if(i == points_.end())
+        {
+            i = points_.end() - 1;
+        }
+        else if(i->x_ == x)
+        {
+            return i->y_;
+        }
+        else if(i == points_.begin())
+        {
+            ++i;
+        }
+        else
+        {
+        }
+
+        const Point2D& p1 = *(i - 1);
+        const Point2D& p2 = *i;
+        return (p2.y_ - p1.y_) / (p2.x_ - p1.x_) * (x - p1.x_) + p1.y_;
     }
-
-    const Point& p1 = *(i - 1);
-    const Point& p2 = *i;
-    return interpolate(p1.x, p1.y, p2.x, p2.y, x);
-}
-
-double PointSet::interpolate(double x1, double y1, double x2, double y2, double x)
-{
-    return (y2 - y1) / (x2 - x1) * (x - x1) + y1;
 }

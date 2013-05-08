@@ -12,6 +12,8 @@ public:
 
     void convertAMG66toWGS84();
 
+    Point2D operator + (const Point2D& o) const;
+
     double x_;
     double y_;
 };

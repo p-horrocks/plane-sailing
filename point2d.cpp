@@ -4,9 +4,11 @@
 
 void Point2D::convertAMG66toWGS84()
 {
-    Point p(x_, y_);
-    p  = MGRSToUTM(p, "AGD66", "WGS84");
-    p  = utmToLatLng(56, p, false);
-    x_ = p.x;
-    y_ = p.y;
+    *this = MGRSToUTM(*this, "AGD66", "WGS84");
+    *this = utmToLatLng(56, *this, false);
+}
+
+Point2D Point2D::operator + (const Point2D& o) const
+{
+    return Point2D(x_ + o.x_, y_ + o.y_);
 }

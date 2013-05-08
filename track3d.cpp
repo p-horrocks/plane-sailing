@@ -56,10 +56,10 @@ void Track3D::convertAMG66toWGS84()
 {
     for(size_t i = 0; i < xVals_.size(); ++i)
     {
-        Point p(xVals_[i], yVals_[i]);
+        Point2D p(xVals_[i], yVals_[i]);
         p  = MGRSToUTM(p, "AGD66", "WGS84");
         p  = utmToLatLng(56, p, false);
-        xVals_[i] = p.x;
-        yVals_[i] = p.y;
+        xVals_[i] = p.x_;
+        yVals_[i] = p.y_;
     }
 }

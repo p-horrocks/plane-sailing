@@ -12,6 +12,7 @@
 #include "track3d.h"
 #include "point3d.h"
 #include "distribution.h"
+#include "units.h"
 
 // Size of the sample grid.
 const int MAP_CELLS_X               = 50;
@@ -19,7 +20,7 @@ const int MAP_CELLS_Y               = 50;
 const double METRES_PER_CELL        = 1000;
 
 const std::string TOWER_GRID_SQUARE = "56HLJ";
-const Point TOWER_LOCATION          = { 90345.0, 69908.0 }; // Location of Willianstown Tower, in UTM coords (AGD66) - from map
+const Point2D TOWER_LOCATION          ( 90345.0, 69908.0 ); // Location of Willianstown Tower, in UTM coords (AGD66) - from map
 const double GRID_TO_MAGNETIC       = 11.63; // Grid to magnetic variation - from map. Defined as positive where magnetic angle is clockwise from grid north.
 
 // The range and bearing from Williamstown Tower - from control tower log.
@@ -48,7 +49,7 @@ const Distribution BANK_RATE_START    ( DEG2RAD(0.0), DEG2RAD(0.1) );
 const Distribution BANK_RATE_ACCEL    ( DEG2RAD(0.0), DEG2RAD(0.02) );
 
 // 4=normal accuracy, 5=high accuracy
-const int ACCURACY = 4;
+const int ACCURACY = 6;
 
 // 1s is OK for about 50m accuracy even in extreme cases (1 deg/s bank rate)
 const double TIME_INTEGRATION_STEP = 1.0;
@@ -77,10 +78,10 @@ int main(int, char *[])
     planeSpeeds.addPoint(0,                  SPEED_START.mean());
     planeSpeeds.addPoint(elapsedTime.mean(), SPEED_FINISH.mean());
 
-    Point towerLocation = TOWER_LOCATION;
+    Point2D towerLocation = TOWER_LOCATION;
     if(TOWER_GRID_SQUARE == "56HLJ")
     {
-        towerLocation = Point(TOWER_LOCATION.x, TOWER_LOCATION.y - 100000.0);
+        towerLocation = Point2D(TOWER_LOCATION.x_, TOWER_LOCATION.y_ - 100000.0);
     }
 
     KmlFile kml("track.kml");
@@ -164,11 +165,11 @@ int main(int, char *[])
     {
         double time = elapsedTime.offsetMean(stdDevTracks[i].time);
 
-        planeSpeeds[1].x = time;
-        planeSpeeds[0].y = SPEED_START.offsetMean(stdDevTracks[i].startSpeed);
-        planeSpeeds[1].y = SPEED_FINISH.offsetMean(stdDevTracks[i].endSpeed);
-        windSpeeds[0].y  = WIND_6000.offsetMean(stdDevTracks[i].windSpeed);
-        windSpeeds[1].y  = WIND_8000.offsetMean(stdDevTracks[i].windSpeed);
+        planeSpeeds[1].x_ = time;
+        planeSpeeds[0].y_ = SPEED_START.offsetMean(stdDevTracks[i].startSpeed);
+        planeSpeeds[1].y_ = SPEED_FINISH.offsetMean(stdDevTracks[i].endSpeed);
+        windSpeeds[0].y_  = WIND_6000.offsetMean(stdDevTracks[i].windSpeed);
+        windSpeeds[1].y_  = WIND_8000.offsetMean(stdDevTracks[i].windSpeed);
         CalcTrack(
                     towerLocation,
                     TIME_INTEGRATION_STEP,
@@ -186,11 +187,11 @@ int main(int, char *[])
                     );
 
         time = elapsedTime.offsetMean(-stdDevTracks[i].time);
-        planeSpeeds[1].x = time;
-        planeSpeeds[0].y = SPEED_START.offsetMean(-stdDevTracks[i].startSpeed);
-        planeSpeeds[1].y = SPEED_FINISH.offsetMean(-stdDevTracks[i].endSpeed);
-        windSpeeds[0].y  = WIND_6000.offsetMean(-stdDevTracks[i].windSpeed);
-        windSpeeds[1].y  = WIND_8000.offsetMean(-stdDevTracks[i].windSpeed);
+        planeSpeeds[1].x_ = time;
+        planeSpeeds[0].y_ = SPEED_START.offsetMean(-stdDevTracks[i].startSpeed);
+        planeSpeeds[1].y_ = SPEED_FINISH.offsetMean(-stdDevTracks[i].endSpeed);
+        windSpeeds[0].y_  = WIND_6000.offsetMean(-stdDevTracks[i].windSpeed);
+        windSpeeds[1].y_  = WIND_8000.offsetMean(-stdDevTracks[i].windSpeed);
         CalcTrack(
                     towerLocation,
                     TIME_INTEGRATION_STEP,
@@ -227,11 +228,11 @@ int main(int, char *[])
     for(int i = 0; i < numIterations; ++i)
     {
         double time = elapsedTime.sample();
-        planeSpeeds[1].x = time;
-        planeSpeeds[0].y = SPEED_START.sample();
-        planeSpeeds[1].y = SPEED_FINISH.sample();
-        windSpeeds[0].y  = WIND_6000.sample();
-        windSpeeds[1].y  = WIND_8000.sample();
+        planeSpeeds[1].x_ = time;
+        planeSpeeds[0].y_ = SPEED_START.sample();
+        planeSpeeds[1].y_ = SPEED_FINISH.sample();
+        windSpeeds[0].y_  = WIND_6000.sample();
+        windSpeeds[1].y_  = WIND_8000.sample();
         Point3D crashPos = CalcTrack(
                     towerLocation,
                     TIME_INTEGRATION_STEP,

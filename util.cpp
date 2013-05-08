@@ -8,43 +8,15 @@
 #include "track3d.h"
 #include "point3d.h"
 
-// Format string used for times.
-const char* TIME_FORMAT = "%H:%M:%S";
-
-double FeetToMetres(double Feet)
+Point2D MGRSToUTM(const Point2D& pos, const std::string& InputDatum, const std::string& OutputDatum)
 {
-    return Feet * 0.3048;
-}
-
-double MetresToFeet(double Metres)
-{
-    return Metres / 0.3048;
-}
-
-double NMToMetres(double NM)
-{
-    return NM * 1852.0;
-}
-
-double KnotsToMPS(double Knots)
-{
-    return Knots * 1852.0 / 3600.0;
-}
-
-double MPSToKnots(double MPS)
-{
-    return MPS * 3600.0 / 1852.0;
-}
-
-Point MGRSToUTM(const Point& pos, const std::string& InputDatum, const std::string& OutputDatum)
-{
-    Point retval = pos;
+    Point2D retval = pos;
     if(InputDatum == "AGD66")
     {
         retval = AGD66ToWGS84(pos);
     }
-    retval.x += 300000.0;
-    retval.y += + 6400000.0;
+    retval.x_ += 300000.0;
+    retval.y_ += 6400000.0;
     if(OutputDatum == "AGD66")
     {
         retval = WGS84ToAGD66(retval);
@@ -52,24 +24,18 @@ Point MGRSToUTM(const Point& pos, const std::string& InputDatum, const std::stri
     return retval;
 }
 
-Point WGS84ToAGD66(const Point& pos)
+Point2D WGS84ToAGD66(const Point2D& pos)
 {
-    Point retval = pos;
-    retval.x -= 112.0;
-    retval.y -= 183.0;
-    return retval;
+    return pos + Point2D(-122, -183);
 }
 
-Point AGD66ToWGS84(const Point& pos)
+Point2D AGD66ToWGS84(const Point2D& pos)
 {
-    Point retval = pos;
-    retval.x += 112.0;
-    retval.y += 183.0;
-    return retval;
+    return pos + Point2D(122, 183);
 }
 
 Point3D CalcTrack(
-        const Point&    towerPosition,
+        const Point2D&  towerPosition,
         double          timeStep,
         const PointSet& altitudeTrack,
 
@@ -92,8 +58,8 @@ Point3D CalcTrack(
     }
 
     // Set up the initial conditions.
-    double x        = towerPosition.x + fixRange * sin(fixBearing);
-    double y        = towerPosition.y + fixRange * cos(fixBearing);
+    double x        = towerPosition.x_ + fixRange * sin(fixBearing);
+    double y        = towerPosition.y_ + fixRange * cos(fixBearing);
     double z        = 0.0;
     double time     = 0.0;
     double bankRate = initialBankRate;
@@ -145,10 +111,10 @@ Point3D CalcTrack(
 //    y = v[:,1]
 //    return (x,y)
 
-Point utmToLatLng(int zone, const Point& en, bool northernHemisphere)
+Point2D utmToLatLng(int zone, const Point2D& en, bool northernHemisphere)
 {
-    const double easting = en.x;
-    const double northing = northernHemisphere ? en.y : (10000000 - en.y);
+    const double easting = en.x_;
+    const double northing = northernHemisphere ? en.y_ : (10000000 - en.y_);
 
     const double a = 6378137;
     const double e = 0.081819191;
@@ -197,13 +163,5 @@ Point utmToLatLng(int zone, const Point& en, bool northernHemisphere)
 
     double longitude = ((zone > 0) ? (6 * zone - 183.0) : 3.0) - _a3;
 
-    return Point(longitude, latitude);
-}
-
-time_t stringToTime(const char* time)
-{
-    struct tm t;
-    memset(&t, 0, sizeof(t));
-    strptime(time, TIME_FORMAT, &t);
-    return mktime(&t);
+    return Point2D(longitude, latitude);
 }
