@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
         { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL }
     };
 
+    kml.startFolder("+/-1 STD tracks");
     for(int i = 0; stdDevTracks[i].name; ++i)
     {
         double time = elapsedTime.offsetMean(stdDevTracks[i].time);

@@ -30,8 +30,26 @@ KmlFile::KmlFile(const std::string& path)
 
 KmlFile::~KmlFile()
 {
+    if(!folderName_.empty())
+    {
+        os_ << "  </Folder>" << std::endl;
+    }
     os_ << "  </Document>" << std::endl;
     os_ << "</kml>" << std::endl;
+}
+
+void KmlFile::startFolder(const std::string& name)
+{
+    if(!folderName_.empty())
+    {
+        os_ << "  </Folder>" << std::endl;
+    }
+    folderName_ = name;
+    if(!folderName_.empty())
+    {
+        os_ << "  <Folder>" << std::endl;
+        os_ << "    <name>" << folderName_ << "</name>" << std::endl;
+    }
 }
 
 void KmlFile::addPoint(const Point3D& pt, const char* name)
