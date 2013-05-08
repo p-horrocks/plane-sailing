@@ -3,10 +3,12 @@
 
 #include <string>
 #include <vector>
+#include "thread.h"
 class PointSet;
 class Track3D;
 class Point3D;
 class Point2D;
+class KmlFile;
 
 Point2D MGRSToUTM(const Point2D& pos, const std::string& InputDatum, const std::string& OutputDatum);
 Point2D WGS84ToAGD66(const Point2D& pos);
@@ -32,5 +34,7 @@ Point3D CalcTrack(
         );
 
 Point2D utmToLatLng(int zone, const Point2D& en, bool northernHemisphere = true);
+
+Point3D createStdTracks(KmlFile& kml, ThreadParams& params);
 
 #endif // UTIL_H

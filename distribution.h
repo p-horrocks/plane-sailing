@@ -6,6 +6,7 @@
 class Distribution
 {
 public:
+    Distribution() {}
     Distribution(double mean, double stdDev);
 
     double mean() const { return mean_; }

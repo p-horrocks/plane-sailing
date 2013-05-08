@@ -13,6 +13,7 @@
 #include "point3d.h"
 #include "distribution.h"
 #include "units.h"
+#include "thread.h"
 
 // Size of the sample grid.
 const int MAP_CELLS_X               = 50;
@@ -56,250 +57,125 @@ const double TIME_INTEGRATION_STEP = 1.0;
 
 int main(int, char *[])
 {
-    // Estimated time from the simulation start to crash.
-    const Distribution elapsedTime(difftime(CRASH_TIME, FIX_TIME), 35.0);
+    ThreadParams params;
 
-//    lngDistribution=numpy.zeros((MapArray,MapArray), dtype='int32')
-//    dblDistribution=numpy.zeros((MapArray,MapArray), dtype='float64')
-
-    // The x coordinate is elapsed time, y coordinate is altitude. Track starts
-    // at 8500 feet.
-    PointSet knownAltitudes;
-    knownAltitudes.addPoint(0,                                            FeetToMetres(8500));
-    knownAltitudes.addPoint(difftime(stringToTime("19:37:39"), FIX_TIME), FeetToMetres(7500)); // Altitude versus time track, point 2 (7500 feet at 19:37:39)
-    knownAltitudes.addPoint(difftime(stringToTime("19:38:29"), FIX_TIME), FeetToMetres(6500)); // Altitude versus time track, point 3 (6500 feet at 19:38:29)
-    knownAltitudes.addPoint(difftime(stringToTime("19:39:27"), FIX_TIME), FeetToMetres(5500)); // Altitude versus time track, point 4 (5500 feet at 19:39:27)
-
-    PointSet windSpeeds;
-    windSpeeds.addPoint(FeetToMetres(6000), WIND_6000.mean());
-    windSpeeds.addPoint(FeetToMetres(8000), WIND_8000.mean());
-
-    PointSet planeSpeeds;
-    planeSpeeds.addPoint(0,                  SPEED_START.mean());
-    planeSpeeds.addPoint(elapsedTime.mean(), SPEED_FINISH.mean());
-
-    Point2D towerLocation = TOWER_LOCATION;
+    params.iterations    = 1;
+    params.timeStep      = TIME_INTEGRATION_STEP;
+    params.elapsedTime   = Distribution(difftime(CRASH_TIME, FIX_TIME), 35.0);
+    params.towerLocation = TOWER_LOCATION;
     if(TOWER_GRID_SQUARE == "56HLJ")
     {
-        towerLocation = Point2D(TOWER_LOCATION.x_, TOWER_LOCATION.y_ - 100000.0);
+        params.towerLocation.y_ -= 100000.0;
     }
+
+    params.knownAltitudes.addPoint(0,                                            FeetToMetres(8500));
+    params.knownAltitudes.addPoint(difftime(stringToTime("19:37:39"), FIX_TIME), FeetToMetres(7500)); // Altitude versus time track, point 2 (7500 feet at 19:37:39)
+    params.knownAltitudes.addPoint(difftime(stringToTime("19:38:29"), FIX_TIME), FeetToMetres(6500)); // Altitude versus time track, point 3 (6500 feet at 19:38:29)
+    params.knownAltitudes.addPoint(difftime(stringToTime("19:39:27"), FIX_TIME), FeetToMetres(5500)); // Altitude versus time track, point 4 (5500 feet at 19:39:27)
+
+    params.fixRange   = FIX_RANGE;
+    params.fixBearing = FIX_BEARING;
+
+    params.aircraftHeading     = AIRCRAFT_HEADING;
+    params.aircraftSpeedStart  = SPEED_START;
+    params.aircraftSpeedFinish = SPEED_FINISH;
+    params.initialBankRate     = BANK_RATE_START;
+    params.bankRateAccel       = BANK_RATE_ACCEL;
+
+    params.windSpeed6000 = WIND_6000;
+    params.windSpeed8000 = WIND_8000;
+    params.windDirection = WIND_DIRECTION;
 
     KmlFile kml("track.kml");
-    Track3D track1;
-    Track3D track2;
 
-    // Nominal Track
-    Point3D nominalCrashPos = CalcTrack(
-                towerLocation,
-                TIME_INTEGRATION_STEP,
-                knownAltitudes,
-                FIX_RANGE.mean(),
-                FIX_BEARING.mean(),
-                elapsedTime.mean(),
-                AIRCRAFT_HEADING.mean(),
-                BANK_RATE_START.mean(),
-                BANK_RATE_ACCEL.mean(),
-                WIND_DIRECTION.mean(),
-                windSpeeds,
-                planeSpeeds,
-                &track1
-                );
+    Point3D nominalCrashPos = createStdTracks(kml, params);
 
-    std::cout << "Nominal Crash Location: " << nominalCrashPos.x_ << " " << nominalCrashPos.y_ << std::endl;
-    track1.convertAMG66toWGS84();
-    kml.addTrack(track1, "Nominal track", "99ff7777");
-    Point3D end = nominalCrashPos;
-    end.convertAMG66toWGS84();
-    kml.addPoint(end, "Nominal crash location");
+//    const int numIterations = (int)pow(10, ACCURACY);
+//    int ptFreq = numIterations / 100;
 
-    //    #MTI Line - If beyond this it will not have a moving target indicator
+//    std::vector<double> grid(MAP_CELLS_X * MAP_CELLS_Y, 0);
+//    const Point2D gridOrigin(
+//                nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
+//                nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
+//                );
 
-//    const double MTIRange = NMToMetres(44.0); // MTI range from Williamstown Tower
-//    Deviation = numpy.radians(2.0)
-//    MTI_E1 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]+Deviation)
-//    MTI_N1 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]+Deviation)
-//    MTI_E2 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]-Deviation)
-//    MTI_N2 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]-Deviation)
-//    E1,N1 = MGRSToUTM(MTI_E1,MTI_N1,"AGD66","WGS84")
-//    coords1 = utmToLatLng(56,E1,N1,0)
-//    E2,N2 = MGRSToUTM(MTI_E2,MTI_N2,"AGD66","WGS84")
-//    coords2 = utmToLatLng(56,E2,N2,0)
+//    kml.startFolder("Stochastic points (sample)");
+//    double highestCell = 0;
+//    for(int i = 0; i < numIterations; ++i)
+//    {
+//        double time = elapsedTime.sample();
+//        planeSpeeds[1].x_ = time;
+//        planeSpeeds[0].y_ = SPEED_START.sample();
+//        planeSpeeds[1].y_ = SPEED_FINISH.sample();
+//        windSpeeds[0].y_  = WIND_6000.sample();
+//        windSpeeds[1].y_  = WIND_8000.sample();
+//        Point3D crashPos = CalcTrack(
+//                    towerLocation,
+//                    TIME_INTEGRATION_STEP,
+//                    knownAltitudes,
+//                    FIX_RANGE.sample(),
+//                    FIX_BEARING.sample(),
+//                    time,
+//                    AIRCRAFT_HEADING.sample(),
+//                    BANK_RATE_START.sample(),
+//                    BANK_RATE_ACCEL.sample(),
+//                    WIND_DIRECTION.sample(),
+//                    windSpeeds,
+//                    planeSpeeds
+//                    );
 
-//    Track = [(coords1[0],coords1[1],FeetToMetres(7000.0)),(coords2[0],coords2[1],FeetToMetres(7000.0))]
-//    KmlTrack = kml.newlinestring(name = "MTI Line", coords = Track,
-//                                 altitudemode = simplekml.AltitudeMode.absolute)
-//    KmlTrack.linestyle.width = 20
-//    KmlTrack.linestyle.color = '99ff7777'
+//        int col = std::round((crashPos.x_ - gridOrigin.x_) / METRES_PER_CELL);
+//        int row = std::round((crashPos.y_ - gridOrigin.y_) / METRES_PER_CELL);
+//        if((col >= 0) && (row >= 0) && (col < MAP_CELLS_X) && (row < MAP_CELLS_Y))
+//        {
+//            int idx = col + (row * MAP_CELLS_X);
+//            grid[idx] += 1.0;
+//            highestCell = std::max(highestCell, grid[idx]);
+//        }
 
-    const struct
-    {
-        double range;
-        double bearing;
-        double time;
-        double windSpeed;
-        double heading;
-        double bankRate;
-        double bankAccel;
-        double startSpeed;
-        double endSpeed;
-        double windDir;
-        const char* name;
-    }
-    stdDevTracks[] =
-    {
-        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tower range +/-1 STD" } ,
-        { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, "Tower bearing +/-1 STD" } ,
-        { 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, "Elapsed time +/-1 STD" } ,
-        { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, "Wind speed +/-1 STD" } ,
-        { 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, "Aircraft heading +/-1 STD" } ,
-        { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, "Bank rate +/-1 STD" } ,
-        { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, "Bank rate acceleration +/-1 STD" } ,
-        { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, "Start speed +/-1 STD" } ,
-        { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, "End speed +/-1 STD" } ,
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, "Wind direction +/-1 STD" } ,
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL }
-    };
+//        if((i % ptFreq) == 0)
+//        {
+//            std::stringstream ss;
+//            ss << ((100 * i) / numIterations) << "%";
+//            crashPos.convertAMG66toWGS84();
+//            kml.addPoint(crashPos, ss.str().c_str());
+//        }
+//    }
 
-    kml.startFolder("+/-1 STD tracks");
-    for(int i = 0; stdDevTracks[i].name; ++i)
-    {
-        double time = elapsedTime.offsetMean(stdDevTracks[i].time);
+//    kml.startFolder("Grid");
+//    int idx  = 0;
+//    double y = gridOrigin.y_;
+//    for(int row = 0; row < MAP_CELLS_Y; ++row, y += METRES_PER_CELL)
+//    {
+//        double x = gridOrigin.x_;
+//        for(int col = 0; col < MAP_CELLS_X; ++col, ++idx, x += METRES_PER_CELL)
+//        {
+//            Track3D cell;
+//            cell.addPoint(x, y, 0);
+//            cell.addPoint(x + METRES_PER_CELL, y, 0);
+//            cell.addPoint(x + METRES_PER_CELL, y + METRES_PER_CELL, 0);
+//            cell.addPoint(x, y + METRES_PER_CELL, 0);
+//            cell.addPoint(x, y, 0);
+//            cell.convertAMG66toWGS84();
 
-        planeSpeeds[1].x_ = time;
-        planeSpeeds[0].y_ = SPEED_START.offsetMean(stdDevTracks[i].startSpeed);
-        planeSpeeds[1].y_ = SPEED_FINISH.offsetMean(stdDevTracks[i].endSpeed);
-        windSpeeds[0].y_  = WIND_6000.offsetMean(stdDevTracks[i].windSpeed);
-        windSpeeds[1].y_  = WIND_8000.offsetMean(stdDevTracks[i].windSpeed);
-        CalcTrack(
-                    towerLocation,
-                    TIME_INTEGRATION_STEP,
-                    knownAltitudes,
-                    FIX_RANGE.offsetMean(stdDevTracks[i].range),
-                    FIX_BEARING.offsetMean(stdDevTracks[i].bearing),
-                    time,
-                    AIRCRAFT_HEADING.offsetMean(stdDevTracks[i].heading),
-                    BANK_RATE_START.offsetMean(stdDevTracks[i].bankRate),
-                    BANK_RATE_ACCEL.offsetMean(stdDevTracks[i].bankAccel),
-                    WIND_DIRECTION.offsetMean(stdDevTracks[i].windDir),
-                    windSpeeds,
-                    planeSpeeds,
-                    &track1
-                    );
-
-        time = elapsedTime.offsetMean(-stdDevTracks[i].time);
-        planeSpeeds[1].x_ = time;
-        planeSpeeds[0].y_ = SPEED_START.offsetMean(-stdDevTracks[i].startSpeed);
-        planeSpeeds[1].y_ = SPEED_FINISH.offsetMean(-stdDevTracks[i].endSpeed);
-        windSpeeds[0].y_  = WIND_6000.offsetMean(-stdDevTracks[i].windSpeed);
-        windSpeeds[1].y_  = WIND_8000.offsetMean(-stdDevTracks[i].windSpeed);
-        CalcTrack(
-                    towerLocation,
-                    TIME_INTEGRATION_STEP,
-                    knownAltitudes,
-                    FIX_RANGE.offsetMean(-stdDevTracks[i].range),
-                    FIX_BEARING.offsetMean(-stdDevTracks[i].bearing),
-                    time,
-                    AIRCRAFT_HEADING.offsetMean(-stdDevTracks[i].heading),
-                    BANK_RATE_START.offsetMean(-stdDevTracks[i].bankRate),
-                    BANK_RATE_ACCEL.offsetMean(-stdDevTracks[i].bankAccel),
-                    WIND_DIRECTION.offsetMean(-stdDevTracks[i].windDir),
-                    windSpeeds,
-                    planeSpeeds,
-                    &track2
-                    );
-
-        track1.convertAMG66toWGS84();
-        track2.convertAMG66toWGS84();
-        track2.reverse();
-        kml.addPolygon(track1 + track2, stdDevTracks[i].name, "std_tracks");
-    }
-
-    const int numIterations = (int)pow(10, ACCURACY);
-    int ptFreq = numIterations / 100;
-
-    std::vector<double> grid(MAP_CELLS_X * MAP_CELLS_Y, 0);
-    const Point2D gridOrigin(
-                nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
-                nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
-                );
-
-    kml.startFolder("Stochastic points (sample)");
-    double highestCell = 0;
-    for(int i = 0; i < numIterations; ++i)
-    {
-        double time = elapsedTime.sample();
-        planeSpeeds[1].x_ = time;
-        planeSpeeds[0].y_ = SPEED_START.sample();
-        planeSpeeds[1].y_ = SPEED_FINISH.sample();
-        windSpeeds[0].y_  = WIND_6000.sample();
-        windSpeeds[1].y_  = WIND_8000.sample();
-        Point3D crashPos = CalcTrack(
-                    towerLocation,
-                    TIME_INTEGRATION_STEP,
-                    knownAltitudes,
-                    FIX_RANGE.sample(),
-                    FIX_BEARING.sample(),
-                    time,
-                    AIRCRAFT_HEADING.sample(),
-                    BANK_RATE_START.sample(),
-                    BANK_RATE_ACCEL.sample(),
-                    WIND_DIRECTION.sample(),
-                    windSpeeds,
-                    planeSpeeds
-                    );
-
-        int col = std::round((crashPos.x_ - gridOrigin.x_) / METRES_PER_CELL);
-        int row = std::round((crashPos.y_ - gridOrigin.y_) / METRES_PER_CELL);
-        if((col >= 0) && (row >= 0) && (col < MAP_CELLS_X) && (row < MAP_CELLS_Y))
-        {
-            int idx = col + (row * MAP_CELLS_X);
-            grid[idx] += 1.0;
-            highestCell = std::max(highestCell, grid[idx]);
-        }
-
-        if((i % ptFreq) == 0)
-        {
-            std::stringstream ss;
-            ss << ((100 * i) / numIterations) << "%";
-            crashPos.convertAMG66toWGS84();
-            kml.addPoint(crashPos, ss.str().c_str());
-        }
-    }
-
-    kml.startFolder("Grid");
-    int idx  = 0;
-    double y = gridOrigin.y_;
-    for(int row = 0; row < MAP_CELLS_Y; ++row, y += METRES_PER_CELL)
-    {
-        double x = gridOrigin.x_;
-        for(int col = 0; col < MAP_CELLS_X; ++col, ++idx, x += METRES_PER_CELL)
-        {
-            Track3D cell;
-            cell.addPoint(x, y, 0);
-            cell.addPoint(x + METRES_PER_CELL, y, 0);
-            cell.addPoint(x + METRES_PER_CELL, y + METRES_PER_CELL, 0);
-            cell.addPoint(x, y + METRES_PER_CELL, 0);
-            cell.addPoint(x, y, 0);
-            cell.convertAMG66toWGS84();
-
-            const char* style;
-            int level = std::round((4 * grid[idx]) / highestCell);
-            switch(level)
-            {
-            case 1:
-                style = "cell_25"; break;
-            case 2:
-                style = "cell_50"; break;
-            case 3:
-                style = "cell_75"; break;
-            case 4:
-                style = "cell_100"; break;
-            default:
-                style = ((row == 0) && (col == 0)) ? "origin_cell" : "empty_cell"; break;
-            }
-            kml.addPolygon(cell, NULL, style, false);
-        }
-    }
+//            const char* style;
+//            int level = std::round((4 * grid[idx]) / highestCell);
+//            switch(level)
+//            {
+//            case 1:
+//                style = "cell_25"; break;
+//            case 2:
+//                style = "cell_50"; break;
+//            case 3:
+//                style = "cell_75"; break;
+//            case 4:
+//                style = "cell_100"; break;
+//            default:
+//                style = ((row == 0) && (col == 0)) ? "origin_cell" : "empty_cell"; break;
+//            }
+//            kml.addPolygon(cell, NULL, style, false);
+//        }
+//    }
 
 //    for i in range(MapArray):
 //        for j in range(MapArray):

@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     point3d.cpp \
     point2d.cpp \
     distribution.cpp \
-    units.cpp
+    units.cpp \
+    thread.cpp
 
 HEADERS += \
     util.h \
@@ -33,6 +34,7 @@ HEADERS += \
     point3d.h \
     point2d.h \
     distribution.h \
-    units.h
+    units.h \
+    thread.h
 
 LIBS += -lgdal

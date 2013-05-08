@@ -7,6 +7,8 @@
 #include "pointset.h"
 #include "track3d.h"
 #include "point3d.h"
+#include "units.h"
+#include "kmlfile.h"
 
 Point2D MGRSToUTM(const Point2D& pos, const std::string& InputDatum, const std::string& OutputDatum)
 {
@@ -164,4 +166,146 @@ Point2D utmToLatLng(int zone, const Point2D& en, bool northernHemisphere)
     double longitude = ((zone > 0) ? (6 * zone - 183.0) : 3.0) - _a3;
 
     return Point2D(longitude, latitude);
+}
+
+Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
+{
+    Track3D track1;
+    Track3D track2;
+
+    PointSet windSpeeds;
+    windSpeeds.addPoint(FeetToMetres(6000), params.windSpeed6000.mean());
+    windSpeeds.addPoint(FeetToMetres(8000), params.windSpeed8000.mean());
+
+    PointSet planeSpeeds;
+    planeSpeeds.addPoint(0,                  params.aircraftSpeedStart.mean());
+    planeSpeeds.addPoint(params.elapsedTime.mean(), params.aircraftSpeedFinish.mean());
+
+    // Nominal Track
+    Point3D nominalCrashPos = CalcTrack(
+                params.towerLocation,
+                params.timeStep,
+                params.knownAltitudes,
+                params.fixRange.mean(),
+                params.fixBearing.mean(),
+                params.elapsedTime.mean(),
+                params.aircraftHeading.mean(),
+                params.initialBankRate.mean(),
+                params.bankRateAccel.mean(),
+                params.windDirection.mean(),
+                windSpeeds,
+                planeSpeeds,
+                &track1
+                );
+
+    std::cout << "Nominal Crash Location: " << nominalCrashPos.x_ << " " << nominalCrashPos.y_ << std::endl;
+    track1.convertAMG66toWGS84();
+    kml.addTrack(track1, "Nominal track", "99ff7777");
+    Point3D end = nominalCrashPos;
+    end.convertAMG66toWGS84();
+    kml.addPoint(end, "Nominal crash location");
+
+    //    #MTI Line - If beyond this it will not have a moving target indicator
+
+//    const double MTIRange = NMToMetres(44.0); // MTI range from Williamstown Tower
+//    Deviation = numpy.radians(2.0)
+//    MTI_E1 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]+Deviation)
+//    MTI_N1 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]+Deviation)
+//    MTI_E2 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]-Deviation)
+//    MTI_N2 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]-Deviation)
+//    E1,N1 = MGRSToUTM(MTI_E1,MTI_N1,"AGD66","WGS84")
+//    coords1 = utmToLatLng(56,E1,N1,0)
+//    E2,N2 = MGRSToUTM(MTI_E2,MTI_N2,"AGD66","WGS84")
+//    coords2 = utmToLatLng(56,E2,N2,0)
+
+//    Track = [(coords1[0],coords1[1],FeetToMetres(7000.0)),(coords2[0],coords2[1],FeetToMetres(7000.0))]
+//    KmlTrack = kml.newlinestring(name = "MTI Line", coords = Track,
+//                                 altitudemode = simplekml.AltitudeMode.absolute)
+//    KmlTrack.linestyle.width = 20
+//    KmlTrack.linestyle.color = '99ff7777'
+
+    const struct
+    {
+        double range;
+        double bearing;
+        double time;
+        double windSpeed;
+        double heading;
+        double bankRate;
+        double bankAccel;
+        double startSpeed;
+        double endSpeed;
+        double windDir;
+        const char* name;
+    }
+    stdDevTracks[] =
+    {
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Tower range +/-1 STD" } ,
+        { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, "Tower bearing +/-1 STD" } ,
+        { 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, "Elapsed time +/-1 STD" } ,
+        { 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, "Wind speed +/-1 STD" } ,
+        { 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, "Aircraft heading +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, "Bank rate +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, "Bank rate acceleration +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, "Start speed +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, "End speed +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, "Wind direction +/-1 STD" } ,
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL }
+    };
+
+    kml.startFolder("+/-1 STD tracks");
+    for(int i = 0; stdDevTracks[i].name; ++i)
+    {
+        double time = params.elapsedTime.offsetMean(stdDevTracks[i].time);
+
+        planeSpeeds[1].x_ = time;
+        planeSpeeds[0].y_ = params.aircraftSpeedStart.offsetMean(stdDevTracks[i].startSpeed);
+        planeSpeeds[1].y_ = params.aircraftSpeedFinish.offsetMean(stdDevTracks[i].endSpeed);
+        windSpeeds[0].y_  = params.windSpeed6000.offsetMean(stdDevTracks[i].windSpeed);
+        windSpeeds[1].y_  = params.windSpeed8000.offsetMean(stdDevTracks[i].windSpeed);
+        CalcTrack(
+                    params.towerLocation,
+                    params.timeStep,
+                    params.knownAltitudes,
+                    params.fixRange.offsetMean(stdDevTracks[i].range),
+                    params.fixBearing.offsetMean(stdDevTracks[i].bearing),
+                    time,
+                    params.aircraftHeading.offsetMean(stdDevTracks[i].heading),
+                    params.initialBankRate.offsetMean(stdDevTracks[i].bankRate),
+                    params.bankRateAccel.offsetMean(stdDevTracks[i].bankAccel),
+                    params.windDirection.offsetMean(stdDevTracks[i].windDir),
+                    windSpeeds,
+                    planeSpeeds,
+                    &track1
+                    );
+
+        time = params.elapsedTime.offsetMean(-stdDevTracks[i].time);
+        planeSpeeds[1].x_ = time;
+        planeSpeeds[0].y_ = params.aircraftSpeedStart.offsetMean(-stdDevTracks[i].startSpeed);
+        planeSpeeds[1].y_ = params.aircraftSpeedFinish.offsetMean(-stdDevTracks[i].endSpeed);
+        windSpeeds[0].y_  = params.windSpeed6000.offsetMean(-stdDevTracks[i].windSpeed);
+        windSpeeds[1].y_  = params.windSpeed8000.offsetMean(-stdDevTracks[i].windSpeed);
+        CalcTrack(
+                    params.towerLocation,
+                    params.timeStep,
+                    params.knownAltitudes,
+                    params.fixRange.offsetMean(-stdDevTracks[i].range),
+                    params.fixBearing.offsetMean(-stdDevTracks[i].bearing),
+                    time,
+                    params.aircraftHeading.offsetMean(-stdDevTracks[i].heading),
+                    params.initialBankRate.offsetMean(-stdDevTracks[i].bankRate),
+                    params.bankRateAccel.offsetMean(-stdDevTracks[i].bankAccel),
+                    params.windDirection.offsetMean(-stdDevTracks[i].windDir),
+                    windSpeeds,
+                    planeSpeeds,
+                    &track2
+                    );
+
+        track1.convertAMG66toWGS84();
+        track2.convertAMG66toWGS84();
+        track2.reverse();
+        kml.addPolygon(track1 + track2, stdDevTracks[i].name, "std_tracks");
+    }
+
+    return nominalCrashPos;
 }
