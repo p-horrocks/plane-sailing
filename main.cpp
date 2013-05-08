@@ -53,7 +53,7 @@ const int ACCURACY = 4;
 // 1s is OK for about 50m accuracy even in extreme cases (1 deg/s bank rate)
 const double TIME_INTEGRATION_STEP = 1.0;
 
-int main(int argc, char *argv[])
+int main(int, char *[])
 {
     // Estimated time from the simulation start to crash.
     const Distribution elapsedTime(difftime(CRASH_TIME, FIX_TIME), 35.0);
@@ -77,20 +77,11 @@ int main(int argc, char *argv[])
     planeSpeeds.addPoint(0,                  SPEED_START.mean());
     planeSpeeds.addPoint(elapsedTime.mean(), SPEED_FINISH.mean());
 
-    const double MTIRange = NMToMetres(44.0); // MTI range from Williamstown Tower
-
     Point towerLocation = TOWER_LOCATION;
     if(TOWER_GRID_SQUARE == "56HLJ")
     {
         towerLocation = Point(TOWER_LOCATION.x, TOWER_LOCATION.y - 100000.0);
     }
-
-//    Deviation = numpy.radians(2.0)
-
-//    MTI_E1 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]+Deviation)
-//    MTI_N1 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]+Deviation)
-//    MTI_E2 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]-Deviation)
-//    MTI_N2 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]-Deviation)
 
     KmlFile kml("track.kml");
     Track3D track1;
@@ -121,6 +112,13 @@ int main(int argc, char *argv[])
     kml.addPoint(end, "Nominal crash location");
 
     //    #MTI Line - If beyond this it will not have a moving target indicator
+
+//    const double MTIRange = NMToMetres(44.0); // MTI range from Williamstown Tower
+//    Deviation = numpy.radians(2.0)
+//    MTI_E1 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]+Deviation)
+//    MTI_N1 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]+Deviation)
+//    MTI_E2 = TowerPosition[0] + MTIRange * math.sin(TowerFix[1]-Deviation)
+//    MTI_N2 = TowerPosition[1] + MTIRange * math.cos(TowerFix[1]-Deviation)
 //    E1,N1 = MGRSToUTM(MTI_E1,MTI_N1,"AGD66","WGS84")
 //    coords1 = utmToLatLng(56,E1,N1,0)
 //    E2,N2 = MGRSToUTM(MTI_E2,MTI_N2,"AGD66","WGS84")
@@ -212,7 +210,7 @@ int main(int argc, char *argv[])
         track1.convertAMG66toWGS84();
         track2.convertAMG66toWGS84();
         track2.reverse();
-        kml.addPolygon(track1 + track2, stdDevTracks[i].name, "99ff7777");
+        kml.addPolygon(track1 + track2, stdDevTracks[i].name, "std_tracks");
     }
 
 //    Array_E = int(math.floor(Nominal_E/1000.0))-int(MapArray*0.5)
@@ -226,34 +224,9 @@ int main(int argc, char *argv[])
                 nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
                 nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
                 );
-    const Point2D gridEnd(
-                gridOrigin.x_ + (MAP_CELLS_X * METRES_PER_CELL),
-                gridOrigin.y_ + (MAP_CELLS_Y * METRES_PER_CELL)
-                );
-
-    std::vector<Track3D> gridLines;
-    for(int col = 0; col <= MAP_CELLS_X; ++col)
-    {
-        double x = gridOrigin.x_ + (col * METRES_PER_CELL);
-        Track3D line;
-        line.addPoint(x, gridOrigin.y_, 0);
-        line.addPoint(x, gridEnd.y_, 0);
-        line.convertAMG66toWGS84();
-        gridLines.push_back(line);
-    }
-    for(int row = 0; row <= MAP_CELLS_Y; ++row)
-    {
-        double y = gridOrigin.y_ + (row * METRES_PER_CELL);
-        Track3D line;
-        line.addPoint(gridOrigin.x_, y, 0);
-        line.addPoint(gridEnd.x_, y, 0);
-        line.convertAMG66toWGS84();
-        gridLines.push_back(line);
-    }
-    kml.startFolder("Grid");
-    kml.addMultiTrack(gridLines, "Stochastic grid", "99ff7777");
 
     kml.startFolder("Stochastic points (sample)");
+    double highestCell = 0;
     for(int i = 0; i < numIterations; ++i)
     {
         double time = elapsedTime.sample();
@@ -281,7 +254,9 @@ int main(int argc, char *argv[])
         int row = std::round((crashPos.y_ - gridOrigin.y_) / METRES_PER_CELL);
         if((col >= 0) && (row >= 0) && (col < MAP_CELLS_X) && (row < MAP_CELLS_Y))
         {
-            grid[col + (row * MAP_CELLS_X)] += 1.0;
+            int idx = col + (row * MAP_CELLS_X);
+            grid[idx] += 1.0;
+            highestCell = std::max(highestCell, grid[idx]);
         }
 
         if((i % ptFreq) == 0)
@@ -290,6 +265,41 @@ int main(int argc, char *argv[])
             ss << ((100 * i) / numIterations) << "%";
             crashPos.convertAMG66toWGS84();
             kml.addPoint(crashPos, ss.str().c_str());
+        }
+    }
+
+    kml.startFolder("Grid");
+    int idx = 0;
+    for(int row = 0; row <= MAP_CELLS_Y; ++row)
+    {
+        double y = gridOrigin.y_ + (row * METRES_PER_CELL);
+        for(int col = 0; col <= MAP_CELLS_X; ++col, ++idx)
+        {
+            double x = gridOrigin.x_ + (col * METRES_PER_CELL);
+            Track3D cell;
+            cell.addPoint(x, y, 0);
+            cell.addPoint(x + METRES_PER_CELL, y, 0);
+            cell.addPoint(x + METRES_PER_CELL, y + METRES_PER_CELL, 0);
+            cell.addPoint(x, y + METRES_PER_CELL, 0);
+            cell.addPoint(x, y, 0);
+            cell.convertAMG66toWGS84();
+
+            const char* style;
+            int level = std::round((4 * grid[idx]) / highestCell);
+            switch(level)
+            {
+            case 1:
+                style = "cell_25"; break;
+            case 2:
+                style = "cell_50"; break;
+            case 3:
+                style = "cell_75"; break;
+            case 4:
+                style = "cell_100"; break;
+            default:
+                style = ((row == 0) && (col == 0)) ? "origin_cell" : "empty_cell"; break;
+            }
+            kml.addPolygon(cell, NULL, style, false);
         }
     }
 
