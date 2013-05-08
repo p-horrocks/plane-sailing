@@ -213,9 +213,6 @@ int main(int, char *[])
         kml.addPolygon(track1 + track2, stdDevTracks[i].name, "std_tracks");
     }
 
-//    Array_E = int(math.floor(Nominal_E/1000.0))-int(MapArray*0.5)
-//    Array_N = int(math.floor(Nominal_N/1000.0))-int(MapArray*0.5)
-
     const int numIterations = (int)pow(10, ACCURACY);
     int ptFreq = numIterations / 100;
 
@@ -269,13 +266,13 @@ int main(int, char *[])
     }
 
     kml.startFolder("Grid");
-    int idx = 0;
-    for(int row = 0; row <= MAP_CELLS_Y; ++row)
+    int idx  = 0;
+    double y = gridOrigin.y_;
+    for(int row = 0; row < MAP_CELLS_Y; ++row, y += METRES_PER_CELL)
     {
-        double y = gridOrigin.y_ + (row * METRES_PER_CELL);
-        for(int col = 0; col <= MAP_CELLS_X; ++col, ++idx)
+        double x = gridOrigin.x_;
+        for(int col = 0; col < MAP_CELLS_X; ++col, ++idx, x += METRES_PER_CELL)
         {
-            double x = gridOrigin.x_ + (col * METRES_PER_CELL);
             Track3D cell;
             cell.addPoint(x, y, 0);
             cell.addPoint(x + METRES_PER_CELL, y, 0);
