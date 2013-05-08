@@ -5,7 +5,7 @@
 namespace
 {
 
-std::mt19937 __rand;
+std::mt19937 __rand(time(NULL));
 
 } // namespace
 

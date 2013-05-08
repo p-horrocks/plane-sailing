@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <sstream>
 
 #include "util.h"
 #include "pointset.h"
@@ -93,7 +94,7 @@ int main(int argc, char *argv[])
     Track3D track2;
 
     // Nominal Track
-    Point3D end = CalcTrack(
+    Point3D nominalCrashPos = CalcTrack(
                 towerLocation,
                 TIME_INTEGRATION_STEP,
                 knownAltitudes,
@@ -109,9 +110,10 @@ int main(int argc, char *argv[])
                 &track1
                 );
 
-    std::cout << "Nominal Crash Location: " << end.x_ << " " << end.y_ << std::endl;
+    std::cout << "Nominal Crash Location: " << nominalCrashPos.x_ << " " << nominalCrashPos.y_ << std::endl;
     track1.convertAMG66toWGS84();
     kml.addTrack(track1, "Nominal track", "99ff7777");
+    Point3D end = nominalCrashPos;
     end.convertAMG66toWGS84();
     kml.addPoint(end, "Nominal crash location");
 
@@ -216,25 +218,24 @@ int main(int argc, char *argv[])
         kml.addPolygon(track1 + track2, stdDevTracks[i].name, "99ff7777");
     }
 
-//    kmlFolder2 = kml.newfolder(name = "Stochastic Points", description = "1 in 100 of the stochastic points.")
-
 //    Array_E = int(math.floor(Nominal_E/1000.0))-int(MapArray*0.5)
 //    Array_N = int(math.floor(Nominal_N/1000.0))-int(MapArray*0.5)
 
-    std::vector<double> map(MAP_CELLS_X * MAP_CELLS_Y, 0);
     const int numIterations = (int)pow(10, ACCURACY);
+    kml.startFolder("Stochastic points (sample)");
+    int ptFreq = numIterations / 100;
+
+    std::vector<double> map(MAP_CELLS_X * MAP_CELLS_Y, 0);
+
     for(int i = 0; i < numIterations; ++i)
     {
-        if((i % 1000) == 0)
-            std::cerr << i << std::endl;
-
         double time = elapsedTime.sample();
         planeSpeeds[1].x = time;
         planeSpeeds[0].y = SPEED_START.sample();
         planeSpeeds[1].y = SPEED_FINISH.sample();
         windSpeeds[0].y  = WIND_6000.sample();
         windSpeeds[1].y  = WIND_8000.sample();
-        CalcTrack(
+        Point3D crashPos = CalcTrack(
                     towerLocation,
                     TIME_INTEGRATION_STEP,
                     knownAltitudes,
@@ -249,17 +250,19 @@ int main(int argc, char *argv[])
                     planeSpeeds
                     );
 
+        //        BinE = int(math.floor(CrashE/1000.0))-Array_E
+        //        BinN = int(math.floor(CrashN/1000.0))-Array_N
+        //        if BinE >= 0 and BinN >= 0 and BinE <= MapArray-1 and BinN <= MapArray-1:
+        //            lngDistribution[BinE, BinN] += 1
 
-//        BinE = int(math.floor(CrashE/1000.0))-Array_E
-//        BinN = int(math.floor(CrashN/1000.0))-Array_N
-//        if BinE >= 0 and BinN >= 0 and BinE <= MapArray-1 and BinN <= MapArray-1:
-//            lngDistribution[BinE, BinN] += 1
-
-//        if i%1000==0:
-//            # print CrashE, CrashN, BinE, BinN
-//            print (100.0*float(i) / float(Iterations)),"% Done"
-//            coordsUTM = MGRSToUTM(CrashE,CrashN,"AGD66","WGS84")
-//            kmlFolder2.newpoint(name=str(i),coords=[utmToLatLng(56,coordsUTM[0],coordsUTM[1],0)])
+        if((i % ptFreq) == 0)
+        {
+            std::stringstream ss;
+            ss << ((100 * i) / numIterations) << "%";
+            crashPos.convertAMG66toWGS84();
+            kml.addPoint(crashPos, ss.str().c_str());
+        }
+    }
 
 //    for i in range(MapArray):
 //        for j in range(MapArray):
@@ -312,6 +315,6 @@ int main(int argc, char *argv[])
 //    pol3.polystyle.outline = 1
 
 //    kml.save("track2quick.kml")
-    }
+
     return 0;
 }
