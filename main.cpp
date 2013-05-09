@@ -90,92 +90,57 @@ int main(int, char *[])
 
     Point3D nominalCrashPos = createStdTracks(kml, params);
 
-//    const int numIterations = (int)pow(10, ACCURACY);
+    const int numIterations = (int)pow(10, ACCURACY);
+    params.iterations = numIterations;
 //    int ptFreq = numIterations / 100;
 
-//    std::vector<double> grid(MAP_CELLS_X * MAP_CELLS_Y, 0);
-//    const Point2D gridOrigin(
-//                nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
-//                nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
-//                );
+    std::vector<double> grid(MAP_CELLS_X * MAP_CELLS_Y, 0);
+    params.gridCellsX    = MAP_CELLS_X;
+    params.gridCellsY    = MAP_CELLS_Y;
+    params.metresPerCell = METRES_PER_CELL;
+    params.gridOrigin    = Point2D(
+                nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
+                nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
+                );
+    params.grid = &grid;
 
-//    kml.startFolder("Stochastic points (sample)");
-//    double highestCell = 0;
-//    for(int i = 0; i < numIterations; ++i)
-//    {
-//        double time = elapsedTime.sample();
-//        planeSpeeds[1].x_ = time;
-//        planeSpeeds[0].y_ = SPEED_START.sample();
-//        planeSpeeds[1].y_ = SPEED_FINISH.sample();
-//        windSpeeds[0].y_  = WIND_6000.sample();
-//        windSpeeds[1].y_  = WIND_8000.sample();
-//        Point3D crashPos = CalcTrack(
-//                    towerLocation,
-//                    TIME_INTEGRATION_STEP,
-//                    knownAltitudes,
-//                    FIX_RANGE.sample(),
-//                    FIX_BEARING.sample(),
-//                    time,
-//                    AIRCRAFT_HEADING.sample(),
-//                    BANK_RATE_START.sample(),
-//                    BANK_RATE_ACCEL.sample(),
-//                    WIND_DIRECTION.sample(),
-//                    windSpeeds,
-//                    planeSpeeds
-//                    );
+    workerThread(&params);
 
-//        int col = std::round((crashPos.x_ - gridOrigin.x_) / METRES_PER_CELL);
-//        int row = std::round((crashPos.y_ - gridOrigin.y_) / METRES_PER_CELL);
-//        if((col >= 0) && (row >= 0) && (col < MAP_CELLS_X) && (row < MAP_CELLS_Y))
-//        {
-//            int idx = col + (row * MAP_CELLS_X);
-//            grid[idx] += 1.0;
-//            highestCell = std::max(highestCell, grid[idx]);
-//        }
+    kml.startFolder("Grid");
+    int idx  = 0;
+    double y = params.gridOrigin.y_;
+    double highestCell = *std::max_element(grid.begin(), grid.end());
+    for(int row = 0; row < MAP_CELLS_Y; ++row, y += METRES_PER_CELL)
+    {
+        double x = params.gridOrigin.x_;
+        for(int col = 0; col < MAP_CELLS_X; ++col, ++idx, x += METRES_PER_CELL)
+        {
+            Track3D cell;
+            cell.addPoint(x, y, 0);
+            cell.addPoint(x + METRES_PER_CELL, y, 0);
+            cell.addPoint(x + METRES_PER_CELL, y + METRES_PER_CELL, 0);
+            cell.addPoint(x, y + METRES_PER_CELL, 0);
+            cell.addPoint(x, y, 0);
+            cell.convertAMG66toWGS84();
 
-//        if((i % ptFreq) == 0)
-//        {
-//            std::stringstream ss;
-//            ss << ((100 * i) / numIterations) << "%";
-//            crashPos.convertAMG66toWGS84();
-//            kml.addPoint(crashPos, ss.str().c_str());
-//        }
-//    }
-
-//    kml.startFolder("Grid");
-//    int idx  = 0;
-//    double y = gridOrigin.y_;
-//    for(int row = 0; row < MAP_CELLS_Y; ++row, y += METRES_PER_CELL)
-//    {
-//        double x = gridOrigin.x_;
-//        for(int col = 0; col < MAP_CELLS_X; ++col, ++idx, x += METRES_PER_CELL)
-//        {
-//            Track3D cell;
-//            cell.addPoint(x, y, 0);
-//            cell.addPoint(x + METRES_PER_CELL, y, 0);
-//            cell.addPoint(x + METRES_PER_CELL, y + METRES_PER_CELL, 0);
-//            cell.addPoint(x, y + METRES_PER_CELL, 0);
-//            cell.addPoint(x, y, 0);
-//            cell.convertAMG66toWGS84();
-
-//            const char* style;
-//            int level = std::round((4 * grid[idx]) / highestCell);
-//            switch(level)
-//            {
-//            case 1:
-//                style = "cell_25"; break;
-//            case 2:
-//                style = "cell_50"; break;
-//            case 3:
-//                style = "cell_75"; break;
-//            case 4:
-//                style = "cell_100"; break;
-//            default:
-//                style = ((row == 0) && (col == 0)) ? "origin_cell" : "empty_cell"; break;
-//            }
-//            kml.addPolygon(cell, NULL, style, false);
-//        }
-//    }
+            const char* style;
+            int level = std::round((4 * grid[idx]) / highestCell);
+            switch(level)
+            {
+            case 1:
+                style = "cell_25"; break;
+            case 2:
+                style = "cell_50"; break;
+            case 3:
+                style = "cell_75"; break;
+            case 4:
+                style = "cell_100"; break;
+            default:
+                style = ((row == 0) && (col == 0)) ? "origin_cell" : "empty_cell"; break;
+            }
+            kml.addPolygon(cell, NULL, style, false);
+        }
+    }
 
 //    for i in range(MapArray):
 //        for j in range(MapArray):

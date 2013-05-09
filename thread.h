@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include <vector>
 #include "pointset.h"
 #include "distribution.h"
 
@@ -22,6 +23,12 @@ struct ThreadParams
     Distribution windDirection;
     Distribution windSpeed6000;
     Distribution windSpeed8000;
+
+    int gridCellsX;
+    int gridCellsY;
+    double metresPerCell;
+    Point2D gridOrigin;
+    std::vector<double>* grid;
 };
 
 void* workerThread(void* params);
