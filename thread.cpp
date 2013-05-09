@@ -39,6 +39,8 @@ void* workerThread(void* params)
                     planeSpeeds
                     );
 
+        pthread_mutex_lock(&tp->mutex);
+
         int col = std::round((crashPos.x_ - tp->gridOrigin.x_) / tp->metresPerCell);
         int row = std::round((crashPos.y_ - tp->gridOrigin.y_) / tp->metresPerCell);
         if((col >= 0) && (row >= 0) && (col < tp->gridCellsX) && (row < tp->gridCellsY))
@@ -46,6 +48,8 @@ void* workerThread(void* params)
             int idx = col + (row * tp->gridCellsX);
             tp->grid->at(idx) += 1.0;
         }
+
+        pthread_mutex_unlock(&tp->mutex);
     }
 
     return NULL;

@@ -104,7 +104,28 @@ int main(int, char *[])
                 );
     params.grid = &grid;
 
-    workerThread(&params);
+    pthread_mutex_init(&params.mutex, NULL);
+
+    // Allocate space for enough threads and reduce the iterations per thread
+    // to get the same total.
+    std::vector<pthread_t> threads(8);
+    params.iterations /= threads.size();
+
+    // Create all the threads.
+    for(size_t i = 0; i < threads.size(); ++i)
+    {
+        pthread_t id;
+        pthread_create(&id, NULL, workerThread, &params);
+        threads[i] = id;
+    }
+
+    // Wait for all the threads to finish.
+    for(size_t i = 0; i < threads.size(); ++i)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&params.mutex);
 
     kml.startFolder("Grid");
     int idx  = 0;
