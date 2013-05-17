@@ -8,8 +8,8 @@
 
 #include "units.h"
 #include "util.h"
-#include "kmlfile.h"
 #include "point3d.h"
+#include "track3d.h"
 
 namespace
 {
@@ -316,11 +316,11 @@ void MainWnd::startStop()
         std::fill(params_.grid.begin(), params_.grid.end(), 0);
 
         QString path = QString("%1/track.kml").arg(QApplication::applicationDirPath());
-        KmlFile kml(path.toStdString());
+        kml_.reset(new KmlFile(path.toStdString()));
 
         // Need to know the nominal crash location to set up the grid origin.
         // This way we can centre the grid on the nominal crash pos.
-        Point3D nominalCrashPos = createStdTracks(kml, params_);
+        Point3D nominalCrashPos = createStdTracks(*kml_, params_);
         params_.gridOrigin      = Point2D(
                     nominalCrashPos.x_ - (params_.gridCellsX * params_.metresPerCell * 0.5),
                     nominalCrashPos.y_ - (params_.gridCellsY * params_.metresPerCell * 0.5)
@@ -559,6 +559,44 @@ void MainWnd::timerEvent(QTimerEvent*)
     {
         killTimer(timerId_);
         timerId_ = 0;
+
+        kml_->startFolder("Grid");
+        int idx            = 0;
+        double y           = params_.gridOrigin.y_;
+        double highestCell = *std::max_element(params_.grid.begin(), params_.grid.end());
+        for(int row = 0; row < params_.gridCellsY; ++row, y += params_.metresPerCell)
+        {
+            double x = params_.gridOrigin.x_;
+            for(int col = 0; col < params_.gridCellsX; ++col, ++idx, x += params_.metresPerCell)
+            {
+                Track3D cell;
+                cell.addPoint(x, y, 0);
+                cell.addPoint(x + params_.metresPerCell, y, 0);
+                cell.addPoint(x + params_.metresPerCell, y + params_.metresPerCell, 0);
+                cell.addPoint(x, y + params_.metresPerCell, 0);
+                cell.addPoint(x, y, 0);
+                cell.convertAMG66toWGS84();
+
+                const char* style;
+                int level = std::round((4 * params_.grid[idx]) / highestCell);
+                switch(level)
+                {
+                case 1:
+                    style = "cell_25"; break;
+                case 2:
+                    style = "cell_50"; break;
+                case 3:
+                    style = "cell_75"; break;
+                case 4:
+                    style = "cell_100"; break;
+                default:
+                    style = ((row == 0) && (col == 0)) ? "origin_cell" : "empty_cell"; break;
+                }
+                kml_->addPolygon(cell, NULL, style, false);
+            }
+        }
+        kml_.reset();
+
         progress_->setVisible(false);
         startBtn_->setText(tr("Start"));
     }

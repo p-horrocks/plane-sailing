@@ -1,6 +1,7 @@
 #ifndef MAINWND_H
 #define MAINWND_H
 
+#include <memory>
 #include <QMainWindow>
 #include <QComboBox>
 #include <QSettings>
@@ -8,6 +9,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include "thread.h"
+#include "kmlfile.h"
 
 class MainWnd : public QMainWindow
 {
@@ -35,6 +37,7 @@ protected:
     QPushButton*  startBtn_;
     ThreadParams  params_;
     int           timerId_;
+    std::shared_ptr<KmlFile> kml_;
 
     QTableWidgetItem* timeStep_;
     QTableWidgetItem* numCells_;
