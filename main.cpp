@@ -1,3 +1,7 @@
+#include <QApplication>
+
+#include "mainwnd.h"
+
 #include <cmath>
 #include <ctime>
 #include <cassert>
@@ -5,6 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <gdal/gdal_priv.h>
 
 #include "util.h"
 #include "pointset.h"
@@ -55,8 +60,13 @@ const int ACCURACY = 6;
 // 1s is OK for about 50m accuracy even in extreme cases (1 deg/s bank rate)
 const double TIME_INTEGRATION_STEP = 1.0;
 
-int main(int, char *[])
+int main(int argc, char* argv[])
 {
+    QApplication app(argc, argv);
+    MainWnd wnd;
+    wnd.setVisible(true);
+    return app.exec();
+
     ThreadParams params;
 
     params.iterations    = 1;
@@ -126,11 +136,11 @@ int main(int, char *[])
     }
 
     pthread_mutex_destroy(&params.mutex);
+    double highestCell = *std::max_element(grid.begin(), grid.end());
 
     kml.startFolder("Grid");
     int idx  = 0;
     double y = params.gridOrigin.y_;
-    double highestCell = *std::max_element(grid.begin(), grid.end());
     for(int row = 0; row < MAP_CELLS_Y; ++row, y += METRES_PER_CELL)
     {
         double x = params.gridOrigin.x_;
@@ -162,6 +172,19 @@ int main(int, char *[])
             kml.addPolygon(cell, NULL, style, false);
         }
     }
+
+    GDALAllRegister();
+    GDALDriver* driver   = GetGDALDriverManager()->GetDriverByName("VRT");
+    GDALDataset* ds      = driver->Create("", params.gridCellsX, params.gridCellsY, 1, GDT_Float64, 0);
+    GDALRasterBand* band = ds->GetRasterBand(1);
+
+//    GDALRasterBandH band;
+//    OGRLayerH layer;
+//    GDALContourGenerate(
+//                band, highestCell / 4.0, 0, 0, NULL, FALSE, 0, layer, -1, -1, NULL, NULL
+//                );
+
+    GDALClose(ds);
 
 //    for i in range(MapArray):
 //        for j in range(MapArray):

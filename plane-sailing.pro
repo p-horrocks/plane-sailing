@@ -4,9 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core
-
-QT       -= gui
+QT       += core gui xml
 
 TARGET = plane-sailing
 CONFIG   += console
@@ -24,7 +22,8 @@ SOURCES += main.cpp \
     point2d.cpp \
     distribution.cpp \
     units.cpp \
-    thread.cpp
+    thread.cpp \
+    mainwnd.cpp
 
 HEADERS += \
     util.h \
@@ -35,6 +34,7 @@ HEADERS += \
     point2d.h \
     distribution.h \
     units.h \
-    thread.h
+    thread.h \
+    mainwnd.h
 
 LIBS += -lgdal
