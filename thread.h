@@ -26,11 +26,13 @@ struct ThreadParams
     Distribution windSpeed8000;
 
     pthread_mutex_t mutex;
+    bool            cancelRequested;
+    int             completed;
     int             gridCellsX;
     int             gridCellsY;
     double          metresPerCell;
     Point2D         gridOrigin;
-    std::vector<double>* grid;
+    std::vector<double> grid;
 };
 
 void* workerThread(void* params);

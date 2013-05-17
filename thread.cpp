@@ -46,7 +46,7 @@ void* workerThread(void* params)
         if((col >= 0) && (row >= 0) && (col < tp->gridCellsX) && (row < tp->gridCellsY))
         {
             int idx = col + (row * tp->gridCellsX);
-            tp->grid->at(idx) += 1.0;
+            tp->grid[idx] += 1.0;
         }
 
         pthread_mutex_unlock(&tp->mutex);

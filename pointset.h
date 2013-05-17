@@ -12,6 +12,8 @@ public:
     // Points must be added in strictly increasing x order.
     void addPoint(double x, double y);
 
+    void clear() { points_.clear(); }
+
     // Determines the y valuefor a given x. If the y value is within our range
     // then the nearest (by x) known points are interpolated, otherwise the
     // points at the nearest end are extrapolated.

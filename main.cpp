@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
                 nominalCrashPos.x_ - (MAP_CELLS_X * METRES_PER_CELL * 0.5),
                 nominalCrashPos.y_ - (MAP_CELLS_Y * METRES_PER_CELL * 0.5)
                 );
-    params.grid = &grid;
+    params.grid = grid;
 
     pthread_mutex_init(&params.mutex, NULL);
 
@@ -173,10 +173,10 @@ int main(int argc, char* argv[])
         }
     }
 
-    GDALAllRegister();
-    GDALDriver* driver   = GetGDALDriverManager()->GetDriverByName("VRT");
-    GDALDataset* ds      = driver->Create("", params.gridCellsX, params.gridCellsY, 1, GDT_Float64, 0);
-    GDALRasterBand* band = ds->GetRasterBand(1);
+//    GDALAllRegister();
+//    GDALDriver* driver   = GetGDALDriverManager()->GetDriverByName("VRT");
+//    GDALDataset* ds      = driver->Create("", params.gridCellsX, params.gridCellsY, 1, GDT_Float64, 0);
+//    GDALRasterBand* band = ds->GetRasterBand(1);
 
 //    GDALRasterBandH band;
 //    OGRLayerH layer;
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 //                band, highestCell / 4.0, 0, 0, NULL, FALSE, 0, layer, -1, -1, NULL, NULL
 //                );
 
-    GDALClose(ds);
+//    GDALClose(ds);
 
 //    for i in range(MapArray):
 //        for j in range(MapArray):

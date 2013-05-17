@@ -34,6 +34,11 @@ double MPSToKnots(double MPS)
     return MPS * 3600.0 / 1852.0;
 }
 
+time_t stringToTime(const QString& timeStr)
+{
+    return stringToTime(timeStr.toAscii().data());
+}
+
 time_t stringToTime(const char* time)
 {
     struct tm t;

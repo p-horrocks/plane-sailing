@@ -5,7 +5,8 @@
 #include <QComboBox>
 #include <QSettings>
 #include <QTableWidget>
-#include <memory>
+#include <QProgressBar>
+#include "thread.h"
 
 class MainWnd : public QMainWindow
 {
@@ -13,10 +14,12 @@ class MainWnd : public QMainWindow
 
 public:
     MainWnd();
+    ~MainWnd();
 
 public slots:
     void loadSettings();
     void saveSettings();
+    void startStop();
 
 protected:
     QWidget* createFixedBox();
@@ -24,8 +27,11 @@ protected:
     QWidget* createCalcBox();
     void addDefaultDataSet();
 
-    QSettings* settings_;
-    QComboBox* dataSetBox_;
+    QSettings*    settings_;
+    QComboBox*    dataSetBox_;
+    QProgressBar* progress_;
+    ThreadParams  params_;
+    bool          isRunning_;
 
     QTableWidgetItem* timeStep_;
     QTableWidgetItem* numCells_;
@@ -49,6 +55,8 @@ protected:
     QTableWidgetItem* wind6000Std_;
     QTableWidgetItem* wind8000Mean_;
     QTableWidgetItem* wind8000Std_;
+    QTableWidgetItem* windDirectionMean_;
+    QTableWidgetItem* windDirectionStd_;
     QTableWidgetItem* planeHeadingMean_;
     QTableWidgetItem* planeHeadingStd_;
     QTableWidgetItem* initialSpeedMean_;
