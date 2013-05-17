@@ -53,7 +53,7 @@ const QString BANKACCELSTD_KEY      = "BankAccel.Std";
 
 MainWnd::MainWnd()
 {
-    isRunning_ = false;
+    timerId_ = 0;
     pthread_mutex_init(&params_.mutex, NULL);
 
     QString path = QString("%1/settings.ini").arg(QApplication::applicationDirPath());
@@ -274,10 +274,7 @@ void MainWnd::saveSettings()
 
 void MainWnd::startStop()
 {
-    if(isRunning_)
-    {
-    }
-    else
+    if(timerId_ == 0)
     {
         // No calculation running. Start a new one.
         time_t fixTime   = stringToTime(fixTimeMean_->text());
@@ -287,9 +284,9 @@ void MainWnd::startStop()
         time_t crashTime = stringToTime(crashTimeMean_->text());
         double gridToMag = gridToMag_->text().toDouble();
 
-        params_.cancelRequested = false;
-        params_.completed = 0;
-        params_.iterations = std::round(pow(10, iterations_->text().toInt()));
+        params_.cancelRequested  = false;
+        params_.completed        = 0;
+        params_.totalIterations  = std::round(pow(10, iterations_->text().toInt()));
         params_.towerLocation.x_ = towerEasting_->text().toDouble();
         params_.towerLocation.y_ = towerNorthing_->text().toDouble();
         if(towerCell_->text() == "56HLJ")
@@ -329,6 +326,22 @@ void MainWnd::startStop()
                     nominalCrashPos.x_ - (params_.gridCellsX * params_.metresPerCell * 0.5),
                     nominalCrashPos.y_ - (params_.gridCellsY * params_.metresPerCell * 0.5)
                     );
+
+        // Divvy the work load between some threads.
+        static const int numThreads = 8;
+        params_.iterationsPerThread = params_.totalIterations / numThreads;
+        params_.totalIterations     = params_.iterationsPerThread * numThreads;
+        for(int i = 0; i < numThreads; ++i)
+        {
+            pthread_t id;
+            pthread_create(&id, NULL, workerThread, &params_);
+            pthread_detach(id);
+        }
+
+        // Start a timer to track progress and check for completion.
+        timerId_ = startTimer(100);
+        progress_->setVisible(true);
+        progress_->setRange(0, params_.totalIterations);
     }
 }
 
@@ -520,4 +533,20 @@ void MainWnd::addDefaultDataSet()
     settings_->setValue(dataSet + BANKRATESTD_KEY,       0.1);
     settings_->setValue(dataSet + BANKACCELMEAN_KEY,     0.0);
     settings_->setValue(dataSet + BANKACCELSTD_KEY,      0.02);
+}
+
+void MainWnd::timerEvent(QTimerEvent*)
+{
+    pthread_mutex_lock(&params_.mutex);
+    int complete  = params_.completed;
+    bool finished = (params_.completed == params_.totalIterations);
+    pthread_mutex_unlock(&params_.mutex);
+
+    progress_->setValue(complete);
+    if(finished)
+    {
+        killTimer(timerId_);
+        timerId_ = 0;
+        progress_->setVisible(false);
+    }
 }

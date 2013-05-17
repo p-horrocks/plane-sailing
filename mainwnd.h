@@ -26,12 +26,13 @@ protected:
     QWidget* createRandomBox();
     QWidget* createCalcBox();
     void addDefaultDataSet();
+    virtual void timerEvent(QTimerEvent*);
 
     QSettings*    settings_;
     QComboBox*    dataSetBox_;
     QProgressBar* progress_;
     ThreadParams  params_;
-    bool          isRunning_;
+    int           timerId_;
 
     QTableWidgetItem* timeStep_;
     QTableWidgetItem* numCells_;

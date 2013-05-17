@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
 
     ThreadParams params;
 
-    params.iterations    = 1;
+    params.totalIterations    = 1;
     params.timeStep      = TIME_INTEGRATION_STEP;
     params.elapsedTime   = Distribution(difftime(CRASH_TIME, FIX_TIME), 35.0);
     params.towerLocation = TOWER_LOCATION;
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
     Point3D nominalCrashPos = createStdTracks(kml, params);
 
     const int numIterations = (int)pow(10, ACCURACY);
-    params.iterations = numIterations;
+    params.totalIterations = numIterations;
 //    int ptFreq = numIterations / 100;
 
     std::vector<double> grid(MAP_CELLS_X * MAP_CELLS_Y, 0);
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
     // Allocate space for enough threads and reduce the iterations per thread
     // to get the same total.
     std::vector<pthread_t> threads(8);
-    params.iterations /= threads.size();
+    params.iterationsPerThread = params.totalIterations / threads.size();
 
     // Create all the threads.
     for(size_t i = 0; i < threads.size(); ++i)

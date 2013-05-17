@@ -16,7 +16,8 @@ void* workerThread(void* params)
     planeSpeeds.addPoint(0,                      tp->aircraftSpeedStart.mean());
     planeSpeeds.addPoint(tp->elapsedTime.mean(), tp->aircraftSpeedFinish.mean());
 
-    for(int i = 0; i < tp->iterations; ++i)
+    int count = 0;
+    for(int i = 0; i < tp->iterationsPerThread; ++i, ++count)
     {
         double time = tp->elapsedTime.sample();
         planeSpeeds[1].x_ = time;
@@ -48,9 +49,18 @@ void* workerThread(void* params)
             int idx = col + (row * tp->gridCellsX);
             tp->grid[idx] += 1.0;
         }
+        if(count >= 100)
+        {
+            tp->completed += count;
+            count          = 0;
+        }
 
         pthread_mutex_unlock(&tp->mutex);
     }
+
+    pthread_mutex_lock(&tp->mutex);
+    tp->completed += count;
+    pthread_mutex_unlock(&tp->mutex);
 
     return NULL;
 }

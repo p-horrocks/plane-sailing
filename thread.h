@@ -8,7 +8,8 @@
 
 struct ThreadParams
 {
-    int          iterations;
+    int          totalIterations;
+    int          iterationsPerThread;
     Point2D      towerLocation;
     double       timeStep;
     PointSet     knownAltitudes;
