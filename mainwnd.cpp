@@ -8,6 +8,9 @@
 #include <QPushButton>
 
 #include "units.h"
+#include "util.h"
+#include "kmlfile.h"
+#include "point3d.h"
 
 namespace
 {
@@ -315,7 +318,17 @@ void MainWnd::startStop()
         params_.metresPerCell       = cellSize_->text().toDouble();
         params_.grid.resize(params_.gridCellsX * params_.gridCellsY);
         std::fill(params_.grid.begin(), params_.grid.end(), 0);
-        Point2D         gridOrigin;
+
+        QString path = QString("%1/track.kml").arg(QApplication::applicationDirPath());
+        KmlFile kml(path.toStdString());
+
+        // Need to know the nominal crash location to set up the grid origin.
+        // This way we can centre the grid on the nominal crash pos.
+        Point3D nominalCrashPos = createStdTracks(kml, params_);
+        params_.gridOrigin      = Point2D(
+                    nominalCrashPos.x_ - (params_.gridCellsX * params_.metresPerCell * 0.5),
+                    nominalCrashPos.y_ - (params_.gridCellsY * params_.metresPerCell * 0.5)
+                    );
     }
 }
 
