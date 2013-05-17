@@ -5,7 +5,6 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
-#include <QPushButton>
 
 #include "units.h"
 #include "util.h"
@@ -75,8 +74,8 @@ MainWnd::MainWnd()
     ok = connect(resetBtn, SIGNAL(clicked()), this, SLOT(loadSettings()));
     assert(ok);
 
-    QPushButton* startBtn = new QPushButton(tr("Start"));
-    ok = connect(startBtn, SIGNAL(clicked()), this, SLOT(startStop()));
+    startBtn_ = new QPushButton(tr("Start"));
+    ok = connect(startBtn_, SIGNAL(clicked()), this, SLOT(startStop()));
     assert(ok);
 
     QHBoxLayout* fileLayout = new QHBoxLayout;
@@ -87,7 +86,7 @@ MainWnd::MainWnd()
     QHBoxLayout* progressLayout = new QHBoxLayout;
     progressLayout->addStretch();
     progressLayout->addWidget(progress_);
-    progressLayout->addWidget(startBtn);
+    progressLayout->addWidget(startBtn_);
 
     QGridLayout* layout = new QGridLayout;
     layout->addLayout(fileLayout,        0, 0, 1, 2);
@@ -340,8 +339,21 @@ void MainWnd::startStop()
 
         // Start a timer to track progress and check for completion.
         timerId_ = startTimer(100);
-        progress_->setVisible(true);
         progress_->setRange(0, params_.totalIterations);
+        progress_->setVisible(true);
+        startBtn_->setText(tr("Cancel"));
+    }
+    else
+    {
+        // Cancel the current simulation.
+        pthread_mutex_lock(&params_.mutex);
+        params_.cancelRequested = true;
+        pthread_mutex_unlock(&params_.mutex);
+
+        killTimer(timerId_);
+        timerId_ = 0;
+        progress_->setVisible(false);
+        startBtn_->setText(tr("Start"));
     }
 }
 
@@ -548,5 +560,6 @@ void MainWnd::timerEvent(QTimerEvent*)
         killTimer(timerId_);
         timerId_ = 0;
         progress_->setVisible(false);
+        startBtn_->setText(tr("Start"));
     }
 }

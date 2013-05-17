@@ -16,6 +16,7 @@ void* workerThread(void* params)
     planeSpeeds.addPoint(0,                      tp->aircraftSpeedStart.mean());
     planeSpeeds.addPoint(tp->elapsedTime.mean(), tp->aircraftSpeedFinish.mean());
 
+    bool abort = tp->cancelRequested;
     int count = 0;
     for(int i = 0; i < tp->iterationsPerThread; ++i, ++count)
     {
@@ -54,8 +55,12 @@ void* workerThread(void* params)
             tp->completed += count;
             count          = 0;
         }
+        abort = tp->cancelRequested;
 
         pthread_mutex_unlock(&tp->mutex);
+
+        if(abort)
+            break;
     }
 
     pthread_mutex_lock(&tp->mutex);

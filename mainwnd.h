@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QTableWidget>
 #include <QProgressBar>
+#include <QPushButton>
 #include "thread.h"
 
 class MainWnd : public QMainWindow
@@ -31,6 +32,7 @@ protected:
     QSettings*    settings_;
     QComboBox*    dataSetBox_;
     QProgressBar* progress_;
+    QPushButton*  startBtn_;
     ThreadParams  params_;
     int           timerId_;
 
