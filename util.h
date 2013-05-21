@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include "thread.h"
+#ifndef M_PI
+#define M_PI 3.14159265359
+#endif // M_PI
 class PointSet;
 class Track3D;
 class Point3D;
