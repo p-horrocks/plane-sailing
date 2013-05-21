@@ -1,6 +1,7 @@
 #include "distribution.h"
 
 #include <iostream>
+#include <ctime>
 
 namespace
 {

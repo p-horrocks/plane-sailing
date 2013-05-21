@@ -1,6 +1,7 @@
 #include "units.h"
 
 #include <cstring>
+#include <cstdio>
 
 double FeetToMetres(double Feet)
 {

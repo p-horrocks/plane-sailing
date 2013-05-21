@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
-#include <gdal/gdal_priv.h>
+//#include <gdal/gdal_priv.h>
 
 #include "util.h"
 #include "pointset.h"

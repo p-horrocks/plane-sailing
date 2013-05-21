@@ -39,4 +39,4 @@ HEADERS += \
     mainwnd.h \
     distributionset.h
 
-LIBS += -lgdal
+LIBS += -lpthread

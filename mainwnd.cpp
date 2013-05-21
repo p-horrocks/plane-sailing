@@ -1,6 +1,7 @@
 #include "mainwnd.h"
 
 #include <cassert>
+#include <algorithm>
 #include <QApplication>
 #include <QGridLayout>
 #include <QGroupBox>
