@@ -15,21 +15,29 @@ void* workerThread(void* params)
     int count = 0;
     for(int i = 0; i < tp->iterationsPerThread; ++i, ++count)
     {
-        double time = createPointSets(*tp, true, 0.0, altitudeTrack, planeSpeeds);
-        Point3D crashPos = CalcTrack(
-                    tp->towerLocation,
-                    tp->timeStep,
-                    altitudeTrack,
-                    tp->fixRange.sample(),
-                    tp->fixBearing.sample(),
-                    time,
-                    tp->aircraftHeading.sample(),
-                    tp->initialBankRate.sample(),
-                    tp->bankRateAccel.sample(),
-                    tp->windDirection.sample(),
-                    tp->windProfile.sample(),
-                    planeSpeeds
-                    );
+        Point3D crashPos;
+        try
+        {
+            double time = createPointSets(*tp, true, 0.0, altitudeTrack, planeSpeeds);
+            crashPos = CalcTrack(
+                        tp->towerLocation,
+                        tp->timeStep,
+                        altitudeTrack,
+                        tp->fixRange.sample(),
+                        tp->fixBearing.sample(),
+                        time,
+                        tp->aircraftHeading.sample(),
+                        tp->initialBankRate.sample(),
+                        tp->bankRateAccel.sample(),
+                        tp->windDirection.sample(),
+                        tp->windProfile.sample(),
+                        planeSpeeds
+                        );
+        }
+        catch(...)
+        {
+            continue;
+        }
 
         pthread_mutex_lock(&tp->mutex);
 

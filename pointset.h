@@ -12,9 +12,9 @@ public:
     // Points must be added in strictly increasing x order.
     void addPoint(double x, double y);
 
-    const Point2D& back() const { return points_.back(); }
-
     void clear() { points_.clear(); }
+
+    size_t size() const { return points_.size(); }
 
     // Determines the y valuefor a given x. If the y value is within our range
     // then the nearest (by x) known points are interpolated, otherwise the

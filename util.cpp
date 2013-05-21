@@ -348,5 +348,17 @@ double createPointSets(const ThreadParams& params, bool sample, double stdDev, P
             speed.addPoint(time, spd);
         }
     }
+    //remove-me
+//    std::cerr << "altitude" << std::endl;
+//    for(size_t i = 0; i < altitude.size(); ++i)
+//    {
+//        std::cerr << "t=" << altitude[i].x_ << " altitude=" << altitude[i].y_ << std::endl;
+//    }
+//    std::cerr << "speed" << std::endl;
+//    for(size_t i = 0; i < speed.size(); ++i)
+//    {
+//        std::cerr << "t=" << speed[i].x_ << " speed=" << speed[i].y_ << std::endl;
+//    }
+//    std::cerr << "elapsed=" << lastTime << std::endl;
     return lastTime;
 }

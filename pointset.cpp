@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <stdexcept>
 
 #include "util.h"
 
@@ -26,8 +27,9 @@ PointSet::PointSet()
 
 void PointSet::addPoint(double x, double y)
 {
-    // Points must be added in x order.
-    assert(points_.empty() || (x > points_.back().x_));
+    if(!points_.empty() && (x <= points_.back().x_))
+        throw std::runtime_error("Points added in incorrect order");
+
     points_.push_back(Point2D(x, y));
 }
 
