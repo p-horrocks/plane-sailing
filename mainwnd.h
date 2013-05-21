@@ -24,6 +24,8 @@ public slots:
     void saveSettings();
     void startStop();
 
+    void addFlightRow();
+    void delFlightRow();
     void addWindRow();
     void delWindRow();
 
@@ -31,6 +33,7 @@ protected:
     QWidget* createFixedBox();
     QWidget* createRandomBox();
     QWidget* createCalcBox();
+    QWidget* createFlightBox();
     QWidget* createWindBox();
     void addDefaultDataSet();
     virtual void timerEvent(QTimerEvent*);
@@ -61,10 +64,6 @@ protected:
     QTableWidgetItem* fixTimeStd_;
     QTableWidgetItem* crashTimeMean_;
     QTableWidgetItem* crashTimeStd_;
-    QTableWidgetItem* wind6000Mean_;
-    QTableWidgetItem* wind6000Std_;
-    QTableWidgetItem* wind8000Mean_;
-    QTableWidgetItem* wind8000Std_;
     QTableWidgetItem* windDirectionMean_;
     QTableWidgetItem* windDirectionStd_;
     QTableWidgetItem* planeHeadingMean_;
@@ -78,6 +77,7 @@ protected:
     QTableWidgetItem* bankAccelMean_;
     QTableWidgetItem* bankAccelStd_;
 
+    QTableWidget* flightTable_;
     QTableWidget* windTable_;
 };
 

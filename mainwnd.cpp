@@ -5,6 +5,7 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QVector2D>
 #include <QVector3D>
 
 #include "units.h"
@@ -32,10 +33,6 @@ const QString FIXTIMEMEAN_KEY       = "FixTime.Mean";
 const QString FIXTIMESTD_KEY        = "FixTime.Std";
 const QString CRASHTIMEMEAN_KEY     = "CrashTime.Mean";
 const QString CRASHTIMESTD_KEY      = "CrashTime.Std";
-const QString WIND6000MEAN_KEY      = "Wind6000.Mean";
-const QString WIND6000STD_KEY       = "Wind6000.Std";
-const QString WIND8000MEAN_KEY      = "Wind8000.Mean";
-const QString WIND8000STD_KEY       = "Wind8000.Std";
 const QString WINDDIRECTIONMEAN_KEY = "WindDirection.Mean";
 const QString WINDDIRECTIONSTD_KEY  = "WindDirection.Std";
 const QString PLANEHEADINGMEAN_KEY  = "PlaneHeading.Mean";
@@ -50,6 +47,9 @@ const QString BANKACCELMEAN_KEY     = "BankAccel.Mean";
 const QString BANKACCELSTD_KEY      = "BankAccel.Std";
 
 const QString WINDPROFILE_KEY       = "WindProfile";
+const QString FLIGHTPROFILE_KEY     = "FlightProfile";
+
+const double nullDbl = 1e99;
 
 void populateRow(QTableWidget* table, int row, int cols, ...)
 {
@@ -64,7 +64,14 @@ void populateRow(QTableWidget* table, int row, int cols, ...)
             table->setItem(row, c, item);
         }
         double d = va_arg(args, double);
-        item->setText(QString::number(d, 'f', 1));
+        if(d == nullDbl)
+        {
+            item->setText(QString());
+        }
+        else
+        {
+            item->setText(QString::number(d, 'f', 1));
+        }
     }
 }
 
@@ -112,7 +119,8 @@ MainWnd::MainWnd()
     layout->addLayout(fileLayout,        0, 0, 1, 2);
     layout->addWidget(createFixedBox(),  1, 0);
     layout->addWidget(createCalcBox(),   1, 1);
-    layout->addWidget(createRandomBox(), 2, 0, 1, 2);
+    layout->addWidget(createFlightBox(), 2, 0, 1, 2);
+    layout->addWidget(createRandomBox(), 3, 0);
     layout->addWidget(createWindBox(),   3, 1);
     layout->addLayout(progressLayout,    4, 0, 1, 2);
     layout->setRowStretch(1, 1);
@@ -171,10 +179,6 @@ void MainWnd::loadSettings()
     double fixTimeStd        = settings_->value(dataSet + FIXTIMESTD_KEY).toDouble();
     QString crashTimeMean    = settings_->value(dataSet + CRASHTIMEMEAN_KEY).toString();
     double crashTimeStd      = settings_->value(dataSet + CRASHTIMESTD_KEY).toDouble();
-    double wind6000Mean      = settings_->value(dataSet + WIND6000MEAN_KEY).toDouble();
-    double wind6000Std       = settings_->value(dataSet + WIND6000STD_KEY).toDouble();
-    double wind8000Mean      = settings_->value(dataSet + WIND8000MEAN_KEY).toDouble();
-    double wind8000Std       = settings_->value(dataSet + WIND8000STD_KEY).toDouble();
     double windDirectionMean = settings_->value(dataSet + WINDDIRECTIONMEAN_KEY).toDouble();
     double windDirectionStd  = settings_->value(dataSet + WINDDIRECTIONSTD_KEY).toDouble();
     double planeHeadingMean  = settings_->value(dataSet + PLANEHEADINGMEAN_KEY).toDouble();
@@ -188,6 +192,7 @@ void MainWnd::loadSettings()
     double bankAccelMean     = settings_->value(dataSet + BANKACCELMEAN_KEY).toDouble();
     double bankAccelStd      = settings_->value(dataSet + BANKACCELSTD_KEY).toDouble();
     QVariantList windProfile = settings_->value(dataSet + WINDPROFILE_KEY).toList();
+    QVariantList flightProfile = settings_->value(dataSet + FLIGHTPROFILE_KEY).toList();
 
     towerEasting_->setText(QString::number(towerEasting, 'f', 1));
     towerNorthing_->setText(QString::number(towerNorthing, 'f', 1));
@@ -201,10 +206,6 @@ void MainWnd::loadSettings()
     fixTimeStd_->setText(QString::number(fixTimeStd, 'f', 1));
     crashTimeMean_->setText(crashTimeMean);
     crashTimeStd_->setText(QString::number(crashTimeStd, 'f', 1));
-    wind6000Mean_->setText(QString::number(wind6000Mean, 'f', 1));
-    wind6000Std_->setText(QString::number(wind6000Std, 'f', 1));
-    wind8000Mean_->setText(QString::number(wind8000Mean, 'f', 1));
-    wind8000Std_->setText(QString::number(wind8000Std, 'f', 1));
     windDirectionMean_->setText(QString::number(windDirectionMean, 'f', 1));
     windDirectionStd_->setText(QString::number(windDirectionStd, 'f', 1));
     planeHeadingMean_->setText(QString::number(planeHeadingMean, 'f', 1));
@@ -217,6 +218,21 @@ void MainWnd::loadSettings()
     bankRateStd_->setText(QString::number(bankRateStd, 'f', 1));
     bankAccelMean_->setText(QString::number(bankAccelMean, 'f', 2));
     bankAccelStd_->setText(QString::number(bankAccelStd, 'f', 2));
+
+    flightTable_->setRowCount(flightProfile.size());
+    for(int i = 0; i < flightProfile.size(); ++i)
+    {
+        QVariantList v = flightProfile[i].toList();
+        populateRow(flightTable_, i, 6, 0.0,
+                    v[1].isNull() ? nullDbl : v[1].toDouble(),
+                    v[2].isNull() ? nullDbl : v[2].toDouble(),
+                    v[3].isNull() ? nullDbl : v[3].toDouble(),
+                    v[4].isNull() ? nullDbl : v[4].toDouble(),
+                    v[5].isNull() ? nullDbl : v[5].toDouble()
+                    );
+        flightTable_->item(i, 0)->setText(v[0].toString());
+    }
+
     windTable_->setRowCount(windProfile.size());
     for(int i = 0; i < windProfile.size(); ++i)
     {
@@ -245,10 +261,6 @@ void MainWnd::saveSettings()
     double fixTimeStd        = fixTimeStd_->text().toDouble();
     QString crashTimeMean    = crashTimeMean_->text();
     double crashTimeStd      = crashTimeStd_->text().toDouble();
-    double wind6000Mean      = wind6000Mean_->text().toDouble();
-    double wind6000Std       = wind6000Std_->text().toDouble();
-    double wind8000Mean      = wind8000Mean_->text().toDouble();
-    double wind8000Std       = wind8000Std_->text().toDouble();
     double windDirectionMean = windDirectionMean_->text().toDouble();
     double windDirectionStd  = windDirectionStd_->text().toDouble();
     double planeHeadingMean  = planeHeadingMean_->text().toDouble();
@@ -278,10 +290,6 @@ void MainWnd::saveSettings()
     settings_->setValue(dataSet + FIXTIMESTD_KEY, fixTimeStd);
     settings_->setValue(dataSet + CRASHTIMEMEAN_KEY, crashTimeMean);
     settings_->setValue(dataSet + CRASHTIMESTD_KEY, crashTimeStd);
-    settings_->setValue(dataSet + WIND6000MEAN_KEY, wind6000Mean);
-    settings_->setValue(dataSet + WIND6000STD_KEY, wind6000Std);
-    settings_->setValue(dataSet + WIND8000MEAN_KEY, wind8000Mean);
-    settings_->setValue(dataSet + WIND8000STD_KEY, wind8000Std);
     settings_->setValue(dataSet + WINDDIRECTIONMEAN_KEY, windDirectionMean);
     settings_->setValue(dataSet + WINDDIRECTIONSTD_KEY, windDirectionStd);
     settings_->setValue(dataSet + PLANEHEADINGMEAN_KEY, planeHeadingMean);
@@ -403,6 +411,30 @@ void MainWnd::startStop()
     }
 }
 
+void MainWnd::addFlightRow()
+{
+    int row = flightTable_->rowCount();
+    auto sel = flightTable_->selectedItems();
+    if(!sel.isEmpty())
+    {
+        row = sel[0]->row();
+    }
+    flightTable_->insertRow(row);
+    for(int i = 0; i < 6; ++i)
+    {
+        flightTable_->setItem(row, i, new QTableWidgetItem);
+    }
+}
+
+void MainWnd::delFlightRow()
+{
+    auto sel = flightTable_->selectedItems();
+    if(!sel.isEmpty())
+    {
+        flightTable_->removeRow(sel[0]->row());
+    }
+}
+
 void MainWnd::addWindRow()
 {
     int row = windTable_->rowCount();
@@ -472,8 +504,6 @@ QWidget* MainWnd::createRandomBox()
     vert.push_back(tr("Tower fix bearing (mag)"));
     vert.push_back(tr("Time of tower fix"));
     vert.push_back(tr("Time of crash"));
-    vert.push_back(tr("Wind speed at 6000ft (kn)"));
-    vert.push_back(tr("Wind speed at 8000ft (kn)"));
     vert.push_back(tr("Wind Direction (mag)"));
     vert.push_back(tr("Aircraft heading (mag)"));
     vert.push_back(tr("Initial aircraft speed (kn)"));
@@ -489,10 +519,6 @@ QWidget* MainWnd::createRandomBox()
     fixTimeStd_        = new QTableWidgetItem;
     crashTimeMean_     = new QTableWidgetItem;
     crashTimeStd_      = new QTableWidgetItem;
-    wind6000Mean_      = new QTableWidgetItem;
-    wind6000Std_       = new QTableWidgetItem;
-    wind8000Mean_      = new QTableWidgetItem;
-    wind8000Std_       = new QTableWidgetItem;
     windDirectionMean_ = new QTableWidgetItem;
     windDirectionStd_  = new QTableWidgetItem;
     planeHeadingMean_  = new QTableWidgetItem;
@@ -520,22 +546,18 @@ QWidget* MainWnd::createRandomBox()
     table->setItem(2, 1, fixTimeStd_);
     table->setItem(3, 0, crashTimeMean_);
     table->setItem(3, 1, crashTimeStd_);
-    table->setItem(4, 0, wind6000Mean_);
-    table->setItem(4, 1, wind6000Std_);
-    table->setItem(5, 0, wind8000Mean_);
-    table->setItem(5, 1, wind8000Std_);
-    table->setItem(6, 0, windDirectionMean_);
-    table->setItem(6, 1, windDirectionStd_);
-    table->setItem(7, 0, planeHeadingMean_);
-    table->setItem(7, 1, planeHeadingStd_);
-    table->setItem(8, 0, initialSpeedMean_);
-    table->setItem(8, 1, initialSpeedStd_);
-    table->setItem(9, 0, finalSpeedMean_);
-    table->setItem(9, 1, finalSpeedStd_);
-    table->setItem(10, 0, bankRateMean_);
-    table->setItem(10, 1, bankRateStd_);
-    table->setItem(11, 0, bankAccelMean_);
-    table->setItem(11, 1, bankAccelStd_);
+    table->setItem(4, 0, windDirectionMean_);
+    table->setItem(4, 1, windDirectionStd_);
+    table->setItem(5, 0, planeHeadingMean_);
+    table->setItem(5, 1, planeHeadingStd_);
+    table->setItem(6, 0, initialSpeedMean_);
+    table->setItem(6, 1, initialSpeedStd_);
+    table->setItem(7, 0, finalSpeedMean_);
+    table->setItem(7, 1, finalSpeedStd_);
+    table->setItem(8, 0, bankRateMean_);
+    table->setItem(8, 1, bankRateStd_);
+    table->setItem(9, 0, bankAccelMean_);
+    table->setItem(9, 1, bankAccelStd_);
 
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(table);
@@ -575,6 +597,40 @@ QWidget* MainWnd::createCalcBox()
     layout->addWidget(table);
 
     QGroupBox* retval = new QGroupBox(tr("Calculation Parameters"));
+    retval->setLayout(layout);
+    return retval;
+}
+
+QWidget* MainWnd::createFlightBox()
+{
+    QStringList horz;
+    horz.push_back(tr("Time Mean"));
+    horz.push_back(tr("Time STD"));
+    horz.push_back(tr("Altitude Mean (ft)"));
+    horz.push_back(tr("Altitude STD (ft)"));
+    horz.push_back(tr("Speed Mean (kn)"));
+    horz.push_back(tr("Speed STD (kn)"));
+
+    flightTable_ = new QTableWidget;
+    flightTable_->setRowCount(0);
+    flightTable_->setColumnCount(horz.size());
+    flightTable_->setHorizontalHeaderLabels(horz);
+    flightTable_->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    QPushButton* addBtn    = new QPushButton(tr("Insert"));
+    bool ok = connect(addBtn, SIGNAL(clicked()), this, SLOT(addFlightRow()));
+    assert(ok);
+
+    QPushButton* deleteBtn = new QPushButton(tr("Delete"));
+    ok = connect(deleteBtn, SIGNAL(clicked()), this, SLOT(delFlightRow()));
+    assert(ok);
+
+    QGridLayout* layout = new QGridLayout;
+    layout->addWidget(flightTable_, 0, 0, 1, 3);
+    layout->addWidget(addBtn,     1, 1);
+    layout->addWidget(deleteBtn,  1, 2);
+
+    QGroupBox* retval = new QGroupBox(tr("Flight Profile"));
     retval->setLayout(layout);
     return retval;
 }
@@ -630,10 +686,6 @@ void MainWnd::addDefaultDataSet()
     settings_->setValue(dataSet + FIXTIMESTD_KEY,        0.0);
     settings_->setValue(dataSet + CRASHTIMEMEAN_KEY,     "19:39:27");
     settings_->setValue(dataSet + CRASHTIMESTD_KEY,      35.0);
-    settings_->setValue(dataSet + WIND6000MEAN_KEY,      33.0);
-    settings_->setValue(dataSet + WIND6000STD_KEY,       10.0);
-    settings_->setValue(dataSet + WIND8000MEAN_KEY,      43.0);
-    settings_->setValue(dataSet + WIND8000STD_KEY,       10.0);
     settings_->setValue(dataSet + WINDDIRECTIONMEAN_KEY, 230.0);
     settings_->setValue(dataSet + WINDDIRECTIONSTD_KEY,  10.0);
     settings_->setValue(dataSet + PLANEHEADINGMEAN_KEY,  140.0);
@@ -646,6 +698,38 @@ void MainWnd::addDefaultDataSet()
     settings_->setValue(dataSet + BANKRATESTD_KEY,       0.1);
     settings_->setValue(dataSet + BANKACCELMEAN_KEY,     0.0);
     settings_->setValue(dataSet + BANKACCELSTD_KEY,      0.02);
+
+    static const struct
+    {
+        QVariant timeMean;
+        QVariant timeStd;
+        QVariant altitudeMean;
+        QVariant altitudeStd;
+        QVariant speedMean;
+        QVariant speedStd;
+    }
+    defaultFlight[] =
+    {
+        { "19:36:00", 0.0,  8500.0, 0.0, 145.0, 10.0 },
+        { "19:37:39", 0.0,  7500.0, 0.0, QVariant(), QVariant() },
+        { "19:38:29", 0.0,  6500.0, 0.0, QVariant(), QVariant() },
+        { "19:39:27", 35.0, 5500.0, 0.0, 85.0,  10.0 },
+        { QVariant(), QVariant(), QVariant(), QVariant(), QVariant(), QVariant() }
+    };
+
+    QVariantList flight;
+    for(int i = 0; !defaultFlight[i].timeMean.isNull(); ++i)
+    {
+        QVariantList item;
+        item.push_back(defaultFlight[i].timeMean);
+        item.push_back(defaultFlight[i].timeStd);
+        item.push_back(defaultFlight[i].altitudeMean);
+        item.push_back(defaultFlight[i].altitudeStd);
+        item.push_back(defaultFlight[i].speedMean);
+        item.push_back(defaultFlight[i].speedStd);
+        flight.push_back(item);
+    }
+    settings_->setValue(dataSet + FLIGHTPROFILE_KEY, flight);
 
     QVariantList wind;
     wind.push_back(QVector3D(6000, 33, 10));
