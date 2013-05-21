@@ -184,13 +184,13 @@ void KmlFile::addMultiTrack(const std::vector<Track3D>& tracks, const char* name
     os_ << "      <name>" << name << "</name>" << std::endl;
     os_ << "      <styleUrl>#" << style << "</styleUrl>" << std::endl;
     os_ << "      <MultiGeometry>" << std::endl;
-    for(auto track : tracks)
+    for(auto t = tracks.begin(); t != tracks.end(); ++t)
     {
         os_ << "        <LineString>" << std::endl;
         os_ << "          <coordinates>";
-        for(size_t i = 0; i < track.size(); ++i)
+        for(size_t i = 0; i < t->size(); ++i)
         {
-            os_ << (Point2D)track[i] << ' ';
+            os_ << (Point2D)(*t)[i] << ' ';
         }
         os_ << "</coordinates>" << std::endl;
         os_ << "        </LineString>" << std::endl;

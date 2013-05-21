@@ -40,7 +40,6 @@ Point3D CalcTrack(
         const Point2D&  towerPosition,
         double          timeStep,
         const PointSet& altitudeTrack,
-
         double          fixRange,
         double          fixBearing,
         double          elapsedTime,
