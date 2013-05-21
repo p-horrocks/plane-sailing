@@ -20,46 +20,6 @@
 #include "units.h"
 #include "thread.h"
 
-// Size of the sample grid.
-const int MAP_CELLS_X               = 50;
-const int MAP_CELLS_Y               = 50;
-const double METRES_PER_CELL        = 1000;
-
-const std::string TOWER_GRID_SQUARE = "56HLJ";
-const Point2D TOWER_LOCATION          ( 90345.0, 69908.0 ); // Location of Willianstown Tower, in UTM coords (AGD66) - from map
-const double GRID_TO_MAGNETIC       = 11.63; // Grid to magnetic variation - from map. Defined as positive where magnetic angle is clockwise from grid north.
-
-// The range and bearing from Williamstown Tower - from control tower log.
-// Standard deviations are guessed.
-const Distribution FIX_BEARING        ( DEG2RAD(320.0 + GRID_TO_MAGNETIC), DEG2RAD(2) );
-const Distribution FIX_RANGE          ( NMToMetres(48.0), NMToMetres(0.5) );
-const time_t FIX_TIME               = stringToTime("19:36:00");
-
-// Aircraft heading, Magnetic bearing, from tower log (I think)
-const Distribution AIRCRAFT_HEADING   ( DEG2RAD(140.0 + GRID_TO_MAGNETIC), DEG2RAD(10) );
-
-// Air speed of aircraft at start and finish, from John Watson's analysis
-const Distribution SPEED_START        ( KnotsToMPS(145.0), KnotsToMPS(10.0) );
-const Distribution SPEED_FINISH       ( KnotsToMPS(85.0), KnotsToMPS(10.0) );
-
-// Crash time, estimated, from John Watson's analysis
-const time_t CRASH_TIME             = stringToTime("19:39:27");
-
-// Wind speed (knots) at 6000 and 8000 as well as direction, from John Watson's work.
-const Distribution WIND_8000          ( KnotsToMPS(43.0), KnotsToMPS(10.0) );
-const Distribution WIND_6000          ( KnotsToMPS(33.0), KnotsToMPS(10.0) );
-const Distribution WIND_DIRECTION     ( DEG2RAD(230.0 + GRID_TO_MAGNETIC), DEG2RAD(10) );
-
-// Bank rate at start of simulation (deg/sec) and starting acceleration (deg/sec^2)
-const Distribution BANK_RATE_START    ( DEG2RAD(0.0), DEG2RAD(0.1) );
-const Distribution BANK_RATE_ACCEL    ( DEG2RAD(0.0), DEG2RAD(0.02) );
-
-// 4=normal accuracy, 5=high accuracy
-const int ACCURACY = 6;
-
-// 1s is OK for about 50m accuracy even in extreme cases (1 deg/s bank rate)
-const double TIME_INTEGRATION_STEP = 1.0;
-
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);

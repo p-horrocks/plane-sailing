@@ -6,24 +6,28 @@
 #include "pointset.h"
 #include "distributionset.h"
 
+struct FlightPoint
+{
+    Distribution time;
+    Distribution altitude;
+    Distribution speed;
+};
+
 struct ThreadParams
 {
     int          totalIterations;
     int          iterationsPerThread;
     Point2D      towerLocation;
     double       timeStep;
-    PointSet     knownAltitudes;
 
-    Distribution elapsedTime;
     Distribution fixRange;
     Distribution fixBearing;
     Distribution aircraftHeading;
-    Distribution aircraftSpeedStart;
-    Distribution aircraftSpeedFinish;
     Distribution initialBankRate;
     Distribution bankRateAccel;
     Distribution windDirection;
     DistributionSet windProfile;
+    std::vector<FlightPoint> flightProfile;
 
     pthread_mutex_t mutex;
     bool            cancelRequested;

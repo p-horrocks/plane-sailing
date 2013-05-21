@@ -16,6 +16,7 @@
 namespace
 {
 
+const QString DATASET_KEY    = "DataSet";
 const QString ITERATIONS_KEY = "Iterations";
 const QString CELLSIZE_KEY   = "CellSize";
 const QString NUMCELLS_KEY   = "NumCells";
@@ -73,6 +74,18 @@ void populateRow(QTableWidget* table, int row, int cols, ...)
             item->setText(QString::number(d, 'f', 1));
         }
     }
+}
+
+QVariant maybeDouble(QTableWidgetItem* item)
+{
+    if(item == NULL)
+        return QVariant();
+
+    QString s = item->text();
+    if(s.isEmpty())
+        return QVariant();
+
+    return s.toDouble();
 }
 
 } // namespace
@@ -141,6 +154,7 @@ MainWnd::~MainWnd()
 
 void MainWnd::loadSettings()
 {
+    QString dataSet = settings_->value(DATASET_KEY, "Default").toString();
     int iterations  = settings_->value(ITERATIONS_KEY, 6).toInt();
     double cellSize = settings_->value(CELLSIZE_KEY, 1000.0).toDouble();
     int numCells    = settings_->value(NUMCELLS_KEY, 50).toInt();
@@ -151,6 +165,7 @@ void MainWnd::loadSettings()
     numCells_->setText(QString::number(numCells));
     timeStep_->setText(QString::number(timeStep, 'f', 1));
 
+    dataSetBox_->clear();
     QStringList sets = settings_->childGroups();
     if(sets.isEmpty())
     {
@@ -159,13 +174,10 @@ void MainWnd::loadSettings()
     }
     else
     {
-        QString dataSet = dataSetBox_->currentText();
-        dataSetBox_->clear();
         dataSetBox_->addItems(sets);
         dataSetBox_->setCurrentIndex(sets.indexOf(dataSet));
     }
-    int idx = std::max(0, dataSetBox_->currentIndex());
-    QString dataSet = dataSetBox_->itemText(idx).append('/');
+    dataSet += '/';
 
     double towerEasting      = settings_->value(dataSet + TOWEREAST_KEY).toDouble();
     double towerNorthing     = settings_->value(dataSet + TOWERNORTH_KEY).toDouble();
@@ -243,7 +255,9 @@ void MainWnd::loadSettings()
 
 void MainWnd::saveSettings()
 {
-    QString dataSet = dataSetBox_->currentText().append('/');
+    QString dataSet = dataSetBox_->currentText();
+    settings_->setValue(DATASET_KEY, dataSet);
+    dataSet += '/';
 
     int iterations           = iterations_->text().toInt();
     double cellSize          = cellSize_->text().toDouble();
@@ -303,6 +317,20 @@ void MainWnd::saveSettings()
     settings_->setValue(dataSet + BANKACCELMEAN_KEY, bankAccelMean);
     settings_->setValue(dataSet + BANKACCELSTD_KEY, bankAccelStd);
 
+    QVariantList flightProfile;
+    for(int i = 0; i < flightTable_->rowCount(); ++i)
+    {
+        QVariantList row;
+        row.push_back(flightTable_->item(i, 0)->text());
+        row.push_back(maybeDouble(flightTable_->item(i, 1)));
+        row.push_back(maybeDouble(flightTable_->item(i, 2)));
+        row.push_back(maybeDouble(flightTable_->item(i, 3)));
+        row.push_back(maybeDouble(flightTable_->item(i, 4)));
+        row.push_back(maybeDouble(flightTable_->item(i, 5)));
+        flightProfile.push_back(row);
+    }
+    settings_->setValue(dataSet + FLIGHTPROFILE_KEY, flightProfile);
+
     QVariantList windProfile;
     for(int i = 0; i < windTable_->rowCount(); ++i)
     {
@@ -323,11 +351,6 @@ void MainWnd::startStop()
     if(timerId_ == 0)
     {
         // No calculation running. Start a new one.
-        time_t fixTime   = stringToTime(fixTimeMean_->text());
-        time_t time1     = stringToTime("19:37:39");
-        time_t time2     = stringToTime("19:38:29");
-        time_t time3     = stringToTime("19:39:27");
-        time_t crashTime = stringToTime(crashTimeMean_->text());
         double gridToMag = gridToMag_->text().toDouble();
 
         params_.cancelRequested  = false;
@@ -339,21 +362,41 @@ void MainWnd::startStop()
         {
             params_.towerLocation.y_ -= 100000.0;
         }
-        params_.timeStep = timeStep_->text().toDouble();
-        params_.knownAltitudes.clear();
-        params_.knownAltitudes.addPoint(difftime(fixTime, fixTime), FeetToMetres(8500));
-        params_.knownAltitudes.addPoint(difftime(time1, fixTime),   FeetToMetres(7500));
-        params_.knownAltitudes.addPoint(difftime(time2, fixTime),   FeetToMetres(6500));
-        params_.knownAltitudes.addPoint(difftime(time3, fixTime),   FeetToMetres(5500));
-        params_.elapsedTime         = Distribution(difftime(crashTime, fixTime),                               crashTimeStd_->text().toDouble());
+        params_.timeStep            = timeStep_->text().toDouble();
         params_.fixRange            = Distribution(NMToMetres(fixRangeMean_->text().toDouble()),               NMToMetres(fixRangeStd_->text().toDouble()));
         params_.fixBearing          = Distribution(DEG2RAD(fixBearingMean_->text().toDouble() + gridToMag),    DEG2RAD(fixBearingStd_->text().toDouble()));
         params_.aircraftHeading     = Distribution(DEG2RAD(planeHeadingMean_->text().toDouble() + gridToMag),  DEG2RAD(planeHeadingStd_->text().toDouble()));
-        params_.aircraftSpeedStart  = Distribution(KnotsToMPS(initialSpeedMean_->text().toDouble()),           KnotsToMPS(initialSpeedStd_->text().toDouble()));
-        params_.aircraftSpeedFinish = Distribution(KnotsToMPS(finalSpeedMean_->text().toDouble()),             KnotsToMPS(finalSpeedStd_->text().toDouble()));
         params_.initialBankRate     = Distribution(DEG2RAD(bankRateMean_->text().toDouble()),                  DEG2RAD(bankRateStd_->text().toDouble()));
         params_.bankRateAccel       = Distribution(DEG2RAD(bankAccelMean_->text().toDouble()),                 DEG2RAD(bankAccelStd_->text().toDouble()));
         params_.windDirection       = Distribution(DEG2RAD(windDirectionMean_->text().toDouble() + gridToMag), DEG2RAD(windDirectionStd_->text().toDouble()));
+
+        time_t startTime = 0;
+        params_.flightProfile.clear();
+        for(int i = 0; i < flightTable_->rowCount(); ++i)
+        {
+            FlightPoint p;
+            QTableWidgetItem* tm = flightTable_->item(i, 0);
+            QTableWidgetItem* ts = flightTable_->item(i, 1);
+            QTableWidgetItem* am = flightTable_->item(i, 2);
+            QTableWidgetItem* as = flightTable_->item(i, 3);
+            QTableWidgetItem* sm = flightTable_->item(i, 4);
+            QTableWidgetItem* ss = flightTable_->item(i, 5);
+            if(i == 0)
+            {
+                startTime = stringToTime(tm->text());
+            }
+            p.time = Distribution(difftime(stringToTime(tm->text()), startTime), ts->text().toDouble());
+            if(!am->text().isNull() && !as->text().isNull())
+            {
+                p.altitude = Distribution(FeetToMetres(am->text().toDouble()), FeetToMetres(as->text().toDouble()));
+            }
+            if(!sm->text().isNull() && !ss->text().isNull())
+            {
+                p.speed = Distribution(KnotsToMPS(sm->text().toDouble()), KnotsToMPS(ss->text().toDouble()));
+            }
+            params_.flightProfile.push_back(p);
+        }
+
         params_.windProfile.clear();
         for(int i = 0; i < windTable_->rowCount(); ++i)
         {

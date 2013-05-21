@@ -40,4 +40,6 @@ Point2D utmToLatLng(int zone, const Point2D& en, bool northernHemisphere = true)
 
 Point3D createStdTracks(KmlFile& kml, ThreadParams& params);
 
+double createPointSets(const ThreadParams& params, bool sample, double stdDev, PointSet& altitude, PointSet& speed);
+
 #endif // UTIL_H

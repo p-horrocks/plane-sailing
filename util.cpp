@@ -172,18 +172,18 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
     Track3D track1;
     Track3D track2;
 
+    PointSet altitudeTrack;
     PointSet planeSpeeds;
-    planeSpeeds.addPoint(0,                  params.aircraftSpeedStart.mean());
-    planeSpeeds.addPoint(params.elapsedTime.mean(), params.aircraftSpeedFinish.mean());
+    double elapsed = createPointSets(params, false, 0.0, altitudeTrack, planeSpeeds);
 
     // Nominal Track
     Point3D nominalCrashPos = CalcTrack(
                 params.towerLocation,
                 params.timeStep,
-                params.knownAltitudes,
+                altitudeTrack,
                 params.fixRange.mean(),
                 params.fixBearing.mean(),
-                params.elapsedTime.mean(),
+                elapsed,
                 params.aircraftHeading.mean(),
                 params.initialBankRate.mean(),
                 params.bankRateAccel.mean(),
@@ -251,18 +251,14 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
     kml.startFolder("+/-1 STD tracks");
     for(int i = 0; stdDevTracks[i].name; ++i)
     {
-        double time = params.elapsedTime.offsetMean(stdDevTracks[i].time);
-
-        planeSpeeds[1].x_ = time;
-        planeSpeeds[0].y_ = params.aircraftSpeedStart.offsetMean(stdDevTracks[i].startSpeed);
-        planeSpeeds[1].y_ = params.aircraftSpeedFinish.offsetMean(stdDevTracks[i].endSpeed);
+        double elapsed = createPointSets(params, false, stdDevTracks[i].time, altitudeTrack, planeSpeeds);
         CalcTrack(
                     params.towerLocation,
                     params.timeStep,
-                    params.knownAltitudes,
+                    altitudeTrack,
                     params.fixRange.offsetMean(stdDevTracks[i].range),
                     params.fixBearing.offsetMean(stdDevTracks[i].bearing),
-                    time,
+                    elapsed,
                     params.aircraftHeading.offsetMean(stdDevTracks[i].heading),
                     params.initialBankRate.offsetMean(stdDevTracks[i].bankRate),
                     params.bankRateAccel.offsetMean(stdDevTracks[i].bankAccel),
@@ -272,17 +268,14 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                     &track1
                     );
 
-        time = params.elapsedTime.offsetMean(-stdDevTracks[i].time);
-        planeSpeeds[1].x_ = time;
-        planeSpeeds[0].y_ = params.aircraftSpeedStart.offsetMean(-stdDevTracks[i].startSpeed);
-        planeSpeeds[1].y_ = params.aircraftSpeedFinish.offsetMean(-stdDevTracks[i].endSpeed);
+        elapsed = createPointSets(params, false, -stdDevTracks[i].time, altitudeTrack, planeSpeeds);
         CalcTrack(
                     params.towerLocation,
                     params.timeStep,
-                    params.knownAltitudes,
+                    altitudeTrack,
                     params.fixRange.offsetMean(-stdDevTracks[i].range),
                     params.fixBearing.offsetMean(-stdDevTracks[i].bearing),
-                    time,
+                    elapsed,
                     params.aircraftHeading.offsetMean(-stdDevTracks[i].heading),
                     params.initialBankRate.offsetMean(-stdDevTracks[i].bankRate),
                     params.bankRateAccel.offsetMean(-stdDevTracks[i].bankAccel),
@@ -299,4 +292,61 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
     }
 
     return nominalCrashPos;
+}
+
+double createPointSets(const ThreadParams& params, bool sample, double stdDev, PointSet& altitude, PointSet& speed)
+{
+    double startTime = 0;
+    double lastTime  = 0;
+    altitude.clear();
+    speed.clear();
+    for(auto i = params.flightProfile.begin(); i != params.flightProfile.end(); ++i)
+    {
+        double time;
+        if(sample)
+        {
+            time = i->time.sample();
+        }
+        else
+        {
+            time = i->time.offsetMean(stdDev);
+        }
+        if(i == params.flightProfile.begin())
+        {
+            startTime = time;
+        }
+        else
+        {
+            lastTime = time - startTime;
+        }
+
+        if(!i->altitude.isNull())
+        {
+            double alt;
+            if(sample)
+            {
+                alt = i->altitude.sample();
+            }
+            else
+            {
+                alt = i->altitude.offsetMean(stdDev);
+            }
+            altitude.addPoint(time, alt);
+        }
+
+        if(!i->speed.isNull())
+        {
+            double spd;
+            if(sample)
+            {
+                spd = i->speed.sample();
+            }
+            else
+            {
+                spd = i->speed.offsetMean(stdDev);
+            }
+            speed.addPoint(time, spd);
+        }
+    }
+    return lastTime;
 }

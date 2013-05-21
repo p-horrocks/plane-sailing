@@ -12,7 +12,7 @@ double MetresToFeet(double Metres);
 double NMToMetres(double NM);
 double KnotsToMPS(double Knots);
 double MPSToKnots(double MPS);
-time_t stringToTime(const QString& timeStr);
-time_t stringToTime(const char* timeStr);
+double stringToTime(const QString& timeStr);
+double stringToTime(const char* timeStr);
 
 #endif // UNITS_H

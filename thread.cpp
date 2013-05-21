@@ -8,22 +8,18 @@ void* workerThread(void* params)
 {
     ThreadParams* tp = reinterpret_cast<ThreadParams*>(params);
 
+    PointSet altitudeTrack;
     PointSet planeSpeeds;
-    planeSpeeds.addPoint(0,                      tp->aircraftSpeedStart.mean());
-    planeSpeeds.addPoint(tp->elapsedTime.mean(), tp->aircraftSpeedFinish.mean());
 
     bool abort = tp->cancelRequested;
     int count = 0;
     for(int i = 0; i < tp->iterationsPerThread; ++i, ++count)
     {
-        double time = tp->elapsedTime.sample();
-        planeSpeeds[1].x_ = time;
-        planeSpeeds[0].y_ = tp->aircraftSpeedStart.sample();
-        planeSpeeds[1].y_ = tp->aircraftSpeedFinish.sample();
+        double time = createPointSets(*tp, true, 0.0, altitudeTrack, planeSpeeds);
         Point3D crashPos = CalcTrack(
                     tp->towerLocation,
                     tp->timeStep,
-                    tp->knownAltitudes,
+                    altitudeTrack,
                     tp->fixRange.sample(),
                     tp->fixBearing.sample(),
                     time,

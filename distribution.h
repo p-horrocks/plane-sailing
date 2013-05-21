@@ -6,9 +6,10 @@
 class Distribution
 {
 public:
-    Distribution() {}
+    Distribution() : mean_(1e99), stdDev_(1e99) {}
     Distribution(double mean, double stdDev);
 
+    bool isNull() const { return (mean_ == 1e99) && (stdDev_ == 1e99); }
     double mean() const { return mean_; }
     double offsetMean(double stdDevs) const;
 

@@ -12,6 +12,8 @@ public:
     // Points must be added in strictly increasing x order.
     void addPoint(double x, double y);
 
+    const Point2D& back() const { return points_.back(); }
+
     void clear() { points_.clear(); }
 
     // Determines the y valuefor a given x. If the y value is within our range
