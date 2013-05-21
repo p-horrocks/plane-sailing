@@ -405,10 +405,26 @@ void MainWnd::startStop()
 
 void MainWnd::addWindRow()
 {
+    int row = windTable_->rowCount();
+    auto sel = windTable_->selectedItems();
+    if(!sel.isEmpty())
+    {
+        row = sel[0]->row();
+    }
+    windTable_->insertRow(row);
+    for(int i = 0; i < 3; ++i)
+    {
+        windTable_->setItem(row, i, new QTableWidgetItem);
+    }
 }
 
 void MainWnd::delWindRow()
 {
+    auto sel = windTable_->selectedItems();
+    if(!sel.isEmpty())
+    {
+        windTable_->removeRow(sel[0]->row());
+    }
 }
 
 QWidget* MainWnd::createFixedBox()
@@ -574,8 +590,9 @@ QWidget* MainWnd::createWindBox()
     windTable_->setRowCount(0);
     windTable_->setColumnCount(horz.size());
     windTable_->setHorizontalHeaderLabels(horz);
+    windTable_->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    QPushButton* addBtn    = new QPushButton(tr("Add"));
+    QPushButton* addBtn    = new QPushButton(tr("Insert"));
     bool ok = connect(addBtn, SIGNAL(clicked()), this, SLOT(addWindRow()));
     assert(ok);
 
