@@ -24,10 +24,14 @@ public slots:
     void saveSettings();
     void startStop();
 
+    void addWindRow();
+    void delWindRow();
+
 protected:
     QWidget* createFixedBox();
     QWidget* createRandomBox();
     QWidget* createCalcBox();
+    QWidget* createWindBox();
     void addDefaultDataSet();
     virtual void timerEvent(QTimerEvent*);
 
@@ -73,6 +77,8 @@ protected:
     QTableWidgetItem* bankRateStd_;
     QTableWidgetItem* bankAccelMean_;
     QTableWidgetItem* bankAccelStd_;
+
+    QTableWidget* windTable_;
 };
 
 #endif // MAINWND_H

@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     distribution.cpp \
     units.cpp \
     thread.cpp \
-    mainwnd.cpp
+    mainwnd.cpp \
+    distributionset.cpp
 
 HEADERS += \
     util.h \
@@ -35,6 +36,7 @@ HEADERS += \
     distribution.h \
     units.h \
     thread.h \
-    mainwnd.h
+    mainwnd.h \
+    distributionset.h
 
 LIBS += -lgdal

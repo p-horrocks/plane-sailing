@@ -172,10 +172,6 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
     Track3D track1;
     Track3D track2;
 
-    PointSet windSpeeds;
-    windSpeeds.addPoint(FeetToMetres(6000), params.windSpeed6000.mean());
-    windSpeeds.addPoint(FeetToMetres(8000), params.windSpeed8000.mean());
-
     PointSet planeSpeeds;
     planeSpeeds.addPoint(0,                  params.aircraftSpeedStart.mean());
     planeSpeeds.addPoint(params.elapsedTime.mean(), params.aircraftSpeedFinish.mean());
@@ -192,7 +188,7 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                 params.initialBankRate.mean(),
                 params.bankRateAccel.mean(),
                 params.windDirection.mean(),
-                windSpeeds,
+                params.windProfile.mean(),
                 planeSpeeds,
                 &track1
                 );
@@ -260,8 +256,6 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
         planeSpeeds[1].x_ = time;
         planeSpeeds[0].y_ = params.aircraftSpeedStart.offsetMean(stdDevTracks[i].startSpeed);
         planeSpeeds[1].y_ = params.aircraftSpeedFinish.offsetMean(stdDevTracks[i].endSpeed);
-        windSpeeds[0].y_  = params.windSpeed6000.offsetMean(stdDevTracks[i].windSpeed);
-        windSpeeds[1].y_  = params.windSpeed8000.offsetMean(stdDevTracks[i].windSpeed);
         CalcTrack(
                     params.towerLocation,
                     params.timeStep,
@@ -273,7 +267,7 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                     params.initialBankRate.offsetMean(stdDevTracks[i].bankRate),
                     params.bankRateAccel.offsetMean(stdDevTracks[i].bankAccel),
                     params.windDirection.offsetMean(stdDevTracks[i].windDir),
-                    windSpeeds,
+                    params.windProfile.offsetMean(stdDevTracks[i].windSpeed),
                     planeSpeeds,
                     &track1
                     );
@@ -282,8 +276,6 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
         planeSpeeds[1].x_ = time;
         planeSpeeds[0].y_ = params.aircraftSpeedStart.offsetMean(-stdDevTracks[i].startSpeed);
         planeSpeeds[1].y_ = params.aircraftSpeedFinish.offsetMean(-stdDevTracks[i].endSpeed);
-        windSpeeds[0].y_  = params.windSpeed6000.offsetMean(-stdDevTracks[i].windSpeed);
-        windSpeeds[1].y_  = params.windSpeed8000.offsetMean(-stdDevTracks[i].windSpeed);
         CalcTrack(
                     params.towerLocation,
                     params.timeStep,
@@ -295,7 +287,7 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                     params.initialBankRate.offsetMean(-stdDevTracks[i].bankRate),
                     params.bankRateAccel.offsetMean(-stdDevTracks[i].bankAccel),
                     params.windDirection.offsetMean(-stdDevTracks[i].windDir),
-                    windSpeeds,
+                    params.windProfile.offsetMean(-stdDevTracks[i].windSpeed),
                     planeSpeeds,
                     &track2
                     );

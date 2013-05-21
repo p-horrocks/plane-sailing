@@ -5,6 +5,7 @@
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QVector3D>
 
 #include "units.h"
 #include "util.h"
@@ -47,6 +48,25 @@ const QString BANKRATEMEAN_KEY      = "BankRate.Mean";
 const QString BANKRATESTD_KEY       = "BankRate.Std";
 const QString BANKACCELMEAN_KEY     = "BankAccel.Mean";
 const QString BANKACCELSTD_KEY      = "BankAccel.Std";
+
+const QString WINDPROFILE_KEY       = "WindProfile";
+
+void populateRow(QTableWidget* table, int row, int cols, ...)
+{
+    va_list args;
+    va_start(args, cols);
+    for(int c = 0; c < cols; ++c)
+    {
+        QTableWidgetItem* item = table->item(row, c);
+        if(item == NULL)
+        {
+            item = new QTableWidgetItem;
+            table->setItem(row, c, item);
+        }
+        double d = va_arg(args, double);
+        item->setText(QString::number(d, 'f', 1));
+    }
+}
 
 } // namespace
 
@@ -93,7 +113,8 @@ MainWnd::MainWnd()
     layout->addWidget(createFixedBox(),  1, 0);
     layout->addWidget(createCalcBox(),   1, 1);
     layout->addWidget(createRandomBox(), 2, 0, 1, 2);
-    layout->addLayout(progressLayout,    3, 0, 1, 2);
+    layout->addWidget(createWindBox(),   3, 1);
+    layout->addLayout(progressLayout,    4, 0, 1, 2);
     layout->setRowStretch(1, 1);
     layout->setRowStretch(2, 2);
 
@@ -166,6 +187,7 @@ void MainWnd::loadSettings()
     double bankRateStd       = settings_->value(dataSet + BANKRATESTD_KEY).toDouble();
     double bankAccelMean     = settings_->value(dataSet + BANKACCELMEAN_KEY).toDouble();
     double bankAccelStd      = settings_->value(dataSet + BANKACCELSTD_KEY).toDouble();
+    QVariantList windProfile = settings_->value(dataSet + WINDPROFILE_KEY).toList();
 
     towerEasting_->setText(QString::number(towerEasting, 'f', 1));
     towerNorthing_->setText(QString::number(towerNorthing, 'f', 1));
@@ -195,6 +217,12 @@ void MainWnd::loadSettings()
     bankRateStd_->setText(QString::number(bankRateStd, 'f', 1));
     bankAccelMean_->setText(QString::number(bankAccelMean, 'f', 2));
     bankAccelStd_->setText(QString::number(bankAccelStd, 'f', 2));
+    windTable_->setRowCount(windProfile.size());
+    for(int i = 0; i < windProfile.size(); ++i)
+    {
+        QVector3D v = windProfile[i].value<QVector3D>();
+        populateRow(windTable_, i, 3, v.x(), v.y(), v.z());
+    }
 }
 
 void MainWnd::saveSettings()
@@ -267,6 +295,17 @@ void MainWnd::saveSettings()
     settings_->setValue(dataSet + BANKACCELMEAN_KEY, bankAccelMean);
     settings_->setValue(dataSet + BANKACCELSTD_KEY, bankAccelStd);
 
+    QVariantList windProfile;
+    for(int i = 0; i < windTable_->rowCount(); ++i)
+    {
+        QVector3D v;
+        v.setX(windTable_->item(i, 0)->text().toDouble());
+        v.setY(windTable_->item(i, 1)->text().toDouble());
+        v.setZ(windTable_->item(i, 2)->text().toDouble());
+        windProfile.push_back(v);
+    }
+    settings_->setValue(dataSet + WINDPROFILE_KEY, windProfile);
+
     // Re-populate the combo box and re-format all values.
     loadSettings();
 }
@@ -307,8 +346,15 @@ void MainWnd::startStop()
         params_.initialBankRate     = Distribution(DEG2RAD(bankRateMean_->text().toDouble()),                  DEG2RAD(bankRateStd_->text().toDouble()));
         params_.bankRateAccel       = Distribution(DEG2RAD(bankAccelMean_->text().toDouble()),                 DEG2RAD(bankAccelStd_->text().toDouble()));
         params_.windDirection       = Distribution(DEG2RAD(windDirectionMean_->text().toDouble() + gridToMag), DEG2RAD(windDirectionStd_->text().toDouble()));
-        params_.windSpeed6000       = Distribution(KnotsToMPS(wind6000Mean_->text().toDouble()),               KnotsToMPS(wind6000Std_->text().toDouble()));
-        params_.windSpeed8000       = Distribution(KnotsToMPS(wind8000Mean_->text().toDouble()),               KnotsToMPS(wind8000Std_->text().toDouble()));
+        params_.windProfile.clear();
+        for(int i = 0; i < windTable_->rowCount(); ++i)
+        {
+            double x = FeetToMetres(windTable_->item(i, 0)->text().toDouble());
+            double y = KnotsToMPS(windTable_->item(i, 1)->text().toDouble());
+            double z = KnotsToMPS(windTable_->item(i, 2)->text().toDouble());
+            params_.windProfile.addPoint(x, y, z);
+        }
+
         params_.gridCellsX          = numCells_->text().toInt();
         params_.gridCellsY          = numCells_->text().toInt();
         params_.metresPerCell       = cellSize_->text().toDouble();
@@ -355,6 +401,14 @@ void MainWnd::startStop()
         progress_->setVisible(false);
         startBtn_->setText(tr("Start"));
     }
+}
+
+void MainWnd::addWindRow()
+{
+}
+
+void MainWnd::delWindRow()
+{
 }
 
 QWidget* MainWnd::createFixedBox()
@@ -509,6 +563,36 @@ QWidget* MainWnd::createCalcBox()
     return retval;
 }
 
+QWidget* MainWnd::createWindBox()
+{
+    QStringList horz;
+    horz.push_back(tr("Altitude (ft)"));
+    horz.push_back(tr("Wind Speed Mean (kn)"));
+    horz.push_back(tr("Wind Speed STD (kn)"));
+
+    windTable_ = new QTableWidget;
+    windTable_->setRowCount(0);
+    windTable_->setColumnCount(horz.size());
+    windTable_->setHorizontalHeaderLabels(horz);
+
+    QPushButton* addBtn    = new QPushButton(tr("Add"));
+    bool ok = connect(addBtn, SIGNAL(clicked()), this, SLOT(addWindRow()));
+    assert(ok);
+
+    QPushButton* deleteBtn = new QPushButton(tr("Delete"));
+    ok = connect(deleteBtn, SIGNAL(clicked()), this, SLOT(delWindRow()));
+    assert(ok);
+
+    QGridLayout* layout = new QGridLayout;
+    layout->addWidget(windTable_, 0, 0, 1, 3);
+    layout->addWidget(addBtn,     1, 1);
+    layout->addWidget(deleteBtn,  1, 2);
+
+    QGroupBox* retval = new QGroupBox(tr("Wind Profile"));
+    retval->setLayout(layout);
+    return retval;
+}
+
 void MainWnd::addDefaultDataSet()
 {
     QString dataSet = "Default";
@@ -545,6 +629,11 @@ void MainWnd::addDefaultDataSet()
     settings_->setValue(dataSet + BANKRATESTD_KEY,       0.1);
     settings_->setValue(dataSet + BANKACCELMEAN_KEY,     0.0);
     settings_->setValue(dataSet + BANKACCELSTD_KEY,      0.02);
+
+    QVariantList wind;
+    wind.push_back(QVector3D(6000, 33, 10));
+    wind.push_back(QVector3D(8000, 43, 10));
+    settings_->setValue(dataSet + WINDPROFILE_KEY, wind);
 }
 
 void MainWnd::timerEvent(QTimerEvent*)

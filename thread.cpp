@@ -8,10 +8,6 @@ void* workerThread(void* params)
 {
     ThreadParams* tp = reinterpret_cast<ThreadParams*>(params);
 
-    PointSet windSpeeds;
-    windSpeeds.addPoint(FeetToMetres(6000), tp->windSpeed6000.mean());
-    windSpeeds.addPoint(FeetToMetres(8000), tp->windSpeed8000.mean());
-
     PointSet planeSpeeds;
     planeSpeeds.addPoint(0,                      tp->aircraftSpeedStart.mean());
     planeSpeeds.addPoint(tp->elapsedTime.mean(), tp->aircraftSpeedFinish.mean());
@@ -24,8 +20,6 @@ void* workerThread(void* params)
         planeSpeeds[1].x_ = time;
         planeSpeeds[0].y_ = tp->aircraftSpeedStart.sample();
         planeSpeeds[1].y_ = tp->aircraftSpeedFinish.sample();
-        windSpeeds[0].y_  = tp->windSpeed6000.sample();
-        windSpeeds[1].y_  = tp->windSpeed8000.sample();
         Point3D crashPos = CalcTrack(
                     tp->towerLocation,
                     tp->timeStep,
@@ -37,7 +31,7 @@ void* workerThread(void* params)
                     tp->initialBankRate.sample(),
                     tp->bankRateAccel.sample(),
                     tp->windDirection.sample(),
-                    windSpeeds,
+                    tp->windProfile.sample(),
                     planeSpeeds
                     );
 

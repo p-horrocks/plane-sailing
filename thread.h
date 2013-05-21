@@ -4,7 +4,7 @@
 #include <vector>
 #include <pthread.h>
 #include "pointset.h"
-#include "distribution.h"
+#include "distributionset.h"
 
 struct ThreadParams
 {
@@ -23,8 +23,7 @@ struct ThreadParams
     Distribution initialBankRate;
     Distribution bankRateAccel;
     Distribution windDirection;
-    Distribution windSpeed6000;
-    Distribution windSpeed8000;
+    DistributionSet windProfile;
 
     pthread_mutex_t mutex;
     bool            cancelRequested;
