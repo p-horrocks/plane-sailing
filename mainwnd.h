@@ -60,18 +60,10 @@ protected:
     QTableWidgetItem* fixRangeStd_;
     QTableWidgetItem* fixBearingMean_;
     QTableWidgetItem* fixBearingStd_;
-    QTableWidgetItem* fixTimeMean_;
-    QTableWidgetItem* fixTimeStd_;
-    QTableWidgetItem* crashTimeMean_;
-    QTableWidgetItem* crashTimeStd_;
     QTableWidgetItem* windDirectionMean_;
     QTableWidgetItem* windDirectionStd_;
     QTableWidgetItem* planeHeadingMean_;
     QTableWidgetItem* planeHeadingStd_;
-    QTableWidgetItem* initialSpeedMean_;
-    QTableWidgetItem* initialSpeedStd_;
-    QTableWidgetItem* finalSpeedMean_;
-    QTableWidgetItem* finalSpeedStd_;
     QTableWidgetItem* bankRateMean_;
     QTableWidgetItem* bankRateStd_;
     QTableWidgetItem* bankAccelMean_;
