@@ -55,6 +55,7 @@ protected:
     QTableWidgetItem* towerNorthing_;
     QTableWidgetItem* towerCell_;
     QTableWidgetItem* gridToMag_;
+    QTableWidgetItem* fixMagVariation_;
 
     QTableWidgetItem* fixRangeMean_;
     QTableWidgetItem* fixRangeStd_;

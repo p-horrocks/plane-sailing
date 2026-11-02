@@ -26,6 +26,7 @@ const QString TOWEREAST_KEY         = "TowerEasting";
 const QString TOWERNORTH_KEY        = "TowerNorthing";
 const QString TOWERCELL_KEY         = "TowerGridCell";
 const QString GRIDTOMAG_KEY         = "GridToMagnetic";
+const QString FIXMAGVAR_KEY         = "FixMagneticVariation";
 const QString FIXRANGEMEAN_KEY      = "FixRange.Mean";
 const QString FIXRANGESTD_KEY       = "FixRange.Std";
 const QString FIXBEARINGMEAN_KEY    = "FixBearing.Mean";
@@ -41,6 +42,7 @@ const QString BANKACCELSTD_KEY      = "BankAccel.Std";
 
 const QString WINDPROFILE_KEY       = "WindProfile";
 const QString FLIGHTPROFILE_KEY     = "FlightProfile";
+const QString MLE_DATASET           = "MLE V3 (2018)";
 
 const double nullDbl = 1e99;
 
@@ -142,7 +144,7 @@ MainWnd::~MainWnd()
 
 void MainWnd::loadSettings()
 {
-    QString dataSet = settings_->value(DATASET_KEY, "Default").toString();
+    QString dataSet = settings_->value(DATASET_KEY, MLE_DATASET).toString();
     int iterations  = settings_->value(ITERATIONS_KEY, 6).toInt();
     double cellSize = settings_->value(CELLSIZE_KEY, 1000.0).toDouble();
     int numCells    = settings_->value(NUMCELLS_KEY, 50).toInt();
@@ -155,22 +157,26 @@ void MainWnd::loadSettings()
 
     dataSetBox_->clear();
     QStringList sets = settings_->childGroups();
-    if(sets.isEmpty())
+    if(!sets.contains(MLE_DATASET))
     {
         addDefaultDataSet();
-        dataSetBox_->setCurrentIndex(0);
+        sets = settings_->childGroups();
     }
-    else
+    dataSetBox_->addItems(sets);
+    int dataSetIndex = sets.indexOf(dataSet);
+    if(dataSetIndex < 0)
     {
-        dataSetBox_->addItems(sets);
-        dataSetBox_->setCurrentIndex(sets.indexOf(dataSet));
+        dataSetIndex = sets.indexOf(MLE_DATASET);
     }
+    dataSetBox_->setCurrentIndex(dataSetIndex);
+    dataSet = dataSetBox_->currentText();
     dataSet += '/';
 
     double towerEasting      = settings_->value(dataSet + TOWEREAST_KEY).toDouble();
     double towerNorthing     = settings_->value(dataSet + TOWERNORTH_KEY).toDouble();
     QString towerCell        = settings_->value(dataSet + TOWERCELL_KEY).toString();
     double gridToMag         = settings_->value(dataSet + GRIDTOMAG_KEY).toDouble();
+    double fixMagVariation   = settings_->value(dataSet + FIXMAGVAR_KEY, 12.066).toDouble();
     double fixRangeMean      = settings_->value(dataSet + FIXRANGEMEAN_KEY).toDouble();
     double fixRangeStd       = settings_->value(dataSet + FIXRANGESTD_KEY).toDouble();
     double fixBearingMean    = settings_->value(dataSet + FIXBEARINGMEAN_KEY).toDouble();
@@ -189,11 +195,12 @@ void MainWnd::loadSettings()
     towerEasting_->setText(QString::number(towerEasting, 'f', 1));
     towerNorthing_->setText(QString::number(towerNorthing, 'f', 1));
     towerCell_->setText(towerCell);
-    gridToMag_->setText(QString::number(gridToMag, 'f', 2));
-    fixRangeMean_->setText(QString::number(fixRangeMean, 'f', 1));
-    fixRangeStd_->setText(QString::number(fixRangeStd, 'f', 1));
-    fixBearingMean_->setText(QString::number(fixBearingMean, 'f', 1));
-    fixBearingStd_->setText(QString::number(fixBearingStd, 'f', 1));
+    gridToMag_->setText(QString::number(gridToMag, 'f', 3));
+    fixMagVariation_->setText(QString::number(fixMagVariation, 'f', 3));
+    fixRangeMean_->setText(QString::number(fixRangeMean, 'f', 3));
+    fixRangeStd_->setText(QString::number(fixRangeStd, 'f', 4));
+    fixBearingMean_->setText(QString::number(fixBearingMean, 'f', 2));
+    fixBearingStd_->setText(QString::number(fixBearingStd, 'f', 2));
     windDirectionMean_->setText(QString::number(windDirectionMean, 'f', 1));
     windDirectionStd_->setText(QString::number(windDirectionStd, 'f', 1));
     planeHeadingMean_->setText(QString::number(planeHeadingMean, 'f', 1));
@@ -239,6 +246,7 @@ void MainWnd::saveSettings()
     double towerNorthing     = towerNorthing_->text().toDouble();
     QString towerCell        = towerCell_->text();
     double gridToMag         = gridToMag_->text().toDouble();
+    double fixMagVariation   = fixMagVariation_->text().toDouble();
     double fixRangeMean      = fixRangeMean_->text().toDouble();
     double fixRangeStd       = fixRangeStd_->text().toDouble();
     double fixBearingMean    = fixBearingMean_->text().toDouble();
@@ -260,6 +268,7 @@ void MainWnd::saveSettings()
     settings_->setValue(dataSet + TOWERNORTH_KEY, towerNorthing);
     settings_->setValue(dataSet + TOWERCELL_KEY, towerCell);
     settings_->setValue(dataSet + GRIDTOMAG_KEY, gridToMag);
+    settings_->setValue(dataSet + FIXMAGVAR_KEY, fixMagVariation);
     settings_->setValue(dataSet + FIXRANGEMEAN_KEY, fixRangeMean);
     settings_->setValue(dataSet + FIXRANGESTD_KEY, fixRangeStd);
     settings_->setValue(dataSet + FIXBEARINGMEAN_KEY, fixBearingMean);
@@ -308,6 +317,7 @@ void MainWnd::startStop()
     {
         // No calculation running. Start a new one.
         double gridToMag = gridToMag_->text().toDouble();
+        double fixMagVariation = fixMagVariation_->text().toDouble();
 
         params_.cancelRequested  = false;
         params_.completed        = 0;
@@ -320,7 +330,7 @@ void MainWnd::startStop()
         }
         params_.timeStep            = timeStep_->text().toDouble();
         params_.fixRange            = Distribution(NMToMetres(fixRangeMean_->text().toDouble()),               NMToMetres(fixRangeStd_->text().toDouble()));
-        params_.fixBearing          = Distribution(DEG2RAD(fixBearingMean_->text().toDouble() + gridToMag),    DEG2RAD(fixBearingStd_->text().toDouble()));
+        params_.fixBearing          = Distribution(DEG2RAD(fixBearingMean_->text().toDouble() + fixMagVariation), DEG2RAD(fixBearingStd_->text().toDouble()));
         params_.aircraftHeading     = Distribution(DEG2RAD(planeHeadingMean_->text().toDouble() + gridToMag),  DEG2RAD(planeHeadingStd_->text().toDouble()));
         params_.initialBankRate     = Distribution(DEG2RAD(bankRateMean_->text().toDouble()),                  DEG2RAD(bankRateStd_->text().toDouble()));
         params_.bankRateAccel       = Distribution(DEG2RAD(bankAccelMean_->text().toDouble()),                 DEG2RAD(bankAccelStd_->text().toDouble()));
@@ -467,12 +477,14 @@ QWidget* MainWnd::createFixedBox()
     vert.push_back(tr("Tower location E (AMG)"));
     vert.push_back(tr("Tower location N (AMG)"));
     vert.push_back(tr("Tower UTM cell"));
-    vert.push_back(tr("Grid to magnetic (deg)"));
+    vert.push_back(tr("Track magnetic variation (deg E)"));
+    vert.push_back(tr("Fix magnetic variation (deg E)"));
 
     towerEasting_  = new QTableWidgetItem;
     towerNorthing_ = new QTableWidgetItem;
     towerCell_     = new QTableWidgetItem;
     gridToMag_     = new QTableWidgetItem;
+    fixMagVariation_ = new QTableWidgetItem;
 
     QTableWidget* table = new QTableWidget;
     table->setRowCount(vert.size());
@@ -483,6 +495,7 @@ QWidget* MainWnd::createFixedBox()
     table->setItem(1, 0, towerNorthing_);
     table->setItem(2, 0, towerCell_);
     table->setItem(3, 0, gridToMag_);
+    table->setItem(4, 0, fixMagVariation_);
 
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(table);
@@ -642,28 +655,31 @@ QWidget* MainWnd::createWindBox()
 
 void MainWnd::addDefaultDataSet()
 {
-    QString dataSet = "Default";
-
-    dataSetBox_->addItem(dataSet);
+    QString dataSet = MLE_DATASET;
 
     dataSet.append('/');
-    settings_->setValue(dataSet + TOWEREAST_KEY,        90345.0);
-    settings_->setValue(dataSet + TOWERNORTH_KEY,       69908.0);
+    // AGD66/MGRS values corresponding to the confirmed Williamtown SURAD
+    // position 56H 390248.29, 6370236.35 (WGS84).
+    settings_->setValue(dataSet + TOWEREAST_KEY,        90126.3);
+    settings_->setValue(dataSet + TOWERNORTH_KEY,       70053.4);
     settings_->setValue(dataSet + TOWERCELL_KEY,        "56HLJ");
-    settings_->setValue(dataSet + GRIDTOMAG_KEY,        11.63);
+    settings_->setValue(dataSet + GRIDTOMAG_KEY,        11.732);
+    settings_->setValue(dataSet + FIXMAGVAR_KEY,        12.066);
 
-    settings_->setValue(dataSet + FIXRANGEMEAN_KEY,      48.0);
-    settings_->setValue(dataSet + FIXRANGESTD_KEY,       0.5);
-    settings_->setValue(dataSet + FIXBEARINGMEAN_KEY,    320.0);
-    settings_->setValue(dataSet + FIXBEARINGSTD_KEY,     2.0);
-    settings_->setValue(dataSet + WINDDIRECTIONMEAN_KEY, 230.0);
-    settings_->setValue(dataSet + WINDDIRECTIONSTD_KEY,  10.0);
-    settings_->setValue(dataSet + PLANEHEADINGMEAN_KEY,  140.0);
-    settings_->setValue(dataSet + PLANEHEADINGSTD_KEY,   10.0);
+    // MLE V3 publishes ranges rather than statistical distributions. Represent
+    // each range as +/-3 standard deviations around its midpoint.
+    settings_->setValue(dataSet + FIXRANGEMEAN_KEY,      46.745);
+    settings_->setValue(dataSet + FIXRANGESTD_KEY,       0.3083);
+    settings_->setValue(dataSet + FIXBEARINGMEAN_KEY,    324.5);
+    settings_->setValue(dataSet + FIXBEARINGSTD_KEY,     1.05);
+    settings_->setValue(dataSet + WINDDIRECTIONMEAN_KEY, 245.0);
+    settings_->setValue(dataSet + WINDDIRECTIONSTD_KEY,  0.0);
+    settings_->setValue(dataSet + PLANEHEADINGMEAN_KEY,  65.0);
+    settings_->setValue(dataSet + PLANEHEADINGSTD_KEY,   5.0);
     settings_->setValue(dataSet + BANKRATEMEAN_KEY,      0.0);
-    settings_->setValue(dataSet + BANKRATESTD_KEY,       0.1);
+    settings_->setValue(dataSet + BANKRATESTD_KEY,       0.0);
     settings_->setValue(dataSet + BANKACCELMEAN_KEY,     0.0);
-    settings_->setValue(dataSet + BANKACCELSTD_KEY,      0.02);
+    settings_->setValue(dataSet + BANKACCELSTD_KEY,      0.0);
 
     static const struct
     {
@@ -676,10 +692,8 @@ void MainWnd::addDefaultDataSet()
     }
     defaultFlight[] =
     {
-        { "19:36:00", 0.0,  8500.0, 0.0, 145.0, 10.0 },
-        { "19:37:39", 0.0,  7500.0, 0.0, QVariant(), QVariant() },
-        { "19:38:29", 0.0,  6500.0, 0.0, QVariant(), QVariant() },
-        { "19:39:27", 35.0, 5500.0, 0.0, 85.0,  10.0 },
+        { "19:36:00", 0.0, 8000.0, 0.0, 146.0, 0.0 },
+        { "19:40:06", 0.0, 8000.0, 0.0, 146.0, 0.0 },
         { QVariant(), QVariant(), QVariant(), QVariant(), QVariant(), QVariant() }
     };
 
@@ -698,8 +712,8 @@ void MainWnd::addDefaultDataSet()
     settings_->setValue(dataSet + FLIGHTPROFILE_KEY, flight);
 
     QVariantList wind;
-    wind.push_back(QVector3D(6000, 33, 10));
-    wind.push_back(QVector3D(8000, 43, 10));
+    wind.push_back(QVector3D(0, 50, 0));
+    wind.push_back(QVector3D(10000, 50, 0));
     settings_->setValue(dataSet + WINDPROFILE_KEY, wind);
 }
 

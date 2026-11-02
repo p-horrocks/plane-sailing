@@ -15,7 +15,9 @@ The application estimates possible impact locations from the final reported phas
 
 The resulting impact positions are accumulated into a search grid. The application exports nominal flight paths and the relative density of simulated impact locations as KML for inspection in Google Earth or another KML viewer.
 
-The supplied `Default` data set represents one reconstruction of the available VH-MDX observations. Values are editable and can be saved as named data sets.
+The supplied `MLE V3 (2018)` data set is based on the parameters published in [VH-MDX Most Likely Extent V3](https://vhmdx.com.au/wp-content/uploads/2015/08/VH-MDX-Most-Likely-Extent-V3.pdf). Values are editable and can be saved as named data sets. Existing settings are preserved; select the MLE preset explicitly when upgrading an installation that already has a selected data set.
+
+The MLE defines bounded areas rather than probability distributions. For this stochastic model, each published MLE bearing or range bound is represented as a three-standard-deviation limit around its midpoint. The default profile uses the MLE's 246-second flight time, constant 8,000-foot analysis altitude, 146-knot true airspeed, and simplified 50-knot tailwind. The confirmed Williamtown radar-head coordinates come from [Maximum Possible Extent of Flight V3C](https://vhmdx.com.au/wp-content/uploads/2015/08/Max-Possible-Extent-of-Flight-V3C.pdf). This is a Monte Carlo interpretation of the MLE inputs, not a reproduction of its geometric extent calculation.
 
 ## Requirements
 
