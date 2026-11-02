@@ -6,11 +6,11 @@ Plane Sailing is a small Qt C++ desktop application that models aircraft tracks 
 
 ## Build, Test, and Development Commands
 
-Use a Qt development environment with qmake, a C++11-capable compiler, and pthreads. This is a legacy project originally configured for Qt 4; newer Qt installations may require compatibility adjustments.
+Use a Qt 6 development environment with qmake, a C++17-capable compiler, and pthreads.
 
 ```sh
 mkdir -p build && cd build
-qmake ../plane-sailing.pro
+qmake6 ../plane-sailing.pro
 make -j$(nproc)
 ./plane-sailing
 ```

@@ -1,6 +1,5 @@
 #include "mainwnd.h"
 
-#include <cassert>
 #include <algorithm>
 #include <QApplication>
 #include <QGridLayout>
@@ -96,20 +95,16 @@ MainWnd::MainWnd()
     dataSetBox_ = new QComboBox;
     dataSetBox_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     dataSetBox_->setEditable(true);
-    bool ok = connect(dataSetBox_, SIGNAL(activated(int)), this, SLOT(loadSettings()));
-    assert(ok);
+    connect(dataSetBox_, &QComboBox::activated, this, &MainWnd::loadSettings);
 
     QPushButton* saveBtn = new QPushButton(tr("Save"));
-    ok = connect(saveBtn, SIGNAL(clicked()), this, SLOT(saveSettings()));
-    assert(ok);
+    connect(saveBtn, &QPushButton::clicked, this, &MainWnd::saveSettings);
 
     QPushButton* resetBtn = new QPushButton(tr("Reset"));
-    ok = connect(resetBtn, SIGNAL(clicked()), this, SLOT(loadSettings()));
-    assert(ok);
+    connect(resetBtn, &QPushButton::clicked, this, &MainWnd::loadSettings);
 
     startBtn_ = new QPushButton(tr("Start"));
-    ok = connect(startBtn_, SIGNAL(clicked()), this, SLOT(startStop()));
-    assert(ok);
+    connect(startBtn_, &QPushButton::clicked, this, &MainWnd::startStop);
 
     QHBoxLayout* fileLayout = new QHBoxLayout;
     fileLayout->addWidget(dataSetBox_);
@@ -601,12 +596,10 @@ QWidget* MainWnd::createFlightBox()
     flightTable_->setSelectionMode(QAbstractItemView::SingleSelection);
 
     QPushButton* addBtn    = new QPushButton(tr("Insert"));
-    bool ok = connect(addBtn, SIGNAL(clicked()), this, SLOT(addFlightRow()));
-    assert(ok);
+    connect(addBtn, &QPushButton::clicked, this, &MainWnd::addFlightRow);
 
     QPushButton* deleteBtn = new QPushButton(tr("Delete"));
-    ok = connect(deleteBtn, SIGNAL(clicked()), this, SLOT(delFlightRow()));
-    assert(ok);
+    connect(deleteBtn, &QPushButton::clicked, this, &MainWnd::delFlightRow);
 
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(flightTable_, 0, 0, 1, 3);
@@ -632,12 +625,10 @@ QWidget* MainWnd::createWindBox()
     windTable_->setSelectionMode(QAbstractItemView::SingleSelection);
 
     QPushButton* addBtn    = new QPushButton(tr("Insert"));
-    bool ok = connect(addBtn, SIGNAL(clicked()), this, SLOT(addWindRow()));
-    assert(ok);
+    connect(addBtn, &QPushButton::clicked, this, &MainWnd::addWindRow);
 
     QPushButton* deleteBtn = new QPushButton(tr("Delete"));
-    ok = connect(deleteBtn, SIGNAL(clicked()), this, SLOT(delWindRow()));
-    assert(ok);
+    connect(deleteBtn, &QPushButton::clicked, this, &MainWnd::delWindRow);
 
     QGridLayout* layout = new QGridLayout;
     layout->addWidget(windTable_, 0, 0, 1, 3);

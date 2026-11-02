@@ -30,7 +30,7 @@ double MPSToKnots(double MPS)
 
 double stringToTime(const QString& timeStr)
 {
-    return stringToTime(timeStr.toAscii().data());
+    return stringToTime(timeStr.toLatin1().constData());
 }
 
 double stringToTime(const char* time)

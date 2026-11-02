@@ -4,15 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui xml
+QT       += core gui widgets xml
 
 TARGET = plane-sailing
-CONFIG   += console
+CONFIG   += console c++17
 CONFIG   -= app_bundle
 
 TEMPLATE = app
 
-QMAKE_CXXFLAGS += -std=c++0x
 SOURCES += main.cpp \
     util.cpp \
     kmlfile.cpp \
