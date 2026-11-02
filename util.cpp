@@ -319,10 +319,8 @@ double createPointSets(const ThreadParams& params, bool sample, double stdDev, P
         {
             startTime = time;
         }
-        else
-        {
-            lastTime = time - startTime;
-        }
+        double relativeTime = time - startTime;
+        lastTime = relativeTime;
 
         if(!i->altitude.isNull())
         {
@@ -335,7 +333,7 @@ double createPointSets(const ThreadParams& params, bool sample, double stdDev, P
             {
                 alt = i->altitude.offsetMean(stdDev);
             }
-            altitude.addPoint(time, alt);
+            altitude.addPoint(relativeTime, alt);
         }
 
         if(!i->speed.isNull())
@@ -349,7 +347,7 @@ double createPointSets(const ThreadParams& params, bool sample, double stdDev, P
             {
                 spd = i->speed.offsetMean(stdDev);
             }
-            speed.addPoint(time, spd);
+            speed.addPoint(relativeTime, spd);
         }
     }
     //remove-me
