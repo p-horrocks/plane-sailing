@@ -11,10 +11,16 @@ void* workerThread(void* params)
     PointSet altitudeTrack;
     PointSet planeSpeeds;
 
-    bool abort = tp->cancelRequested;
+    bool abort = false;
     int count = 0;
     for(int i = 0; i < tp->iterationsPerThread; ++i, ++count)
     {
+        pthread_mutex_lock(&tp->mutex);
+        abort = tp->cancelRequested;
+        pthread_mutex_unlock(&tp->mutex);
+        if(abort)
+            break;
+
         Point3D crashPos;
         try
         {

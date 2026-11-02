@@ -2,6 +2,7 @@
 #define MAINWND_H
 
 #include <memory>
+#include <vector>
 #include <QMainWindow>
 #include <QComboBox>
 #include <QSettings>
@@ -36,6 +37,8 @@ protected:
     QWidget* createFlightBox();
     QWidget* createWindBox();
     void addDefaultDataSet();
+    void cancelWorkers();
+    void joinWorkers();
     virtual void timerEvent(QTimerEvent*);
 
     QSettings*    settings_;
@@ -43,6 +46,7 @@ protected:
     QProgressBar* progress_;
     QPushButton*  startBtn_;
     ThreadParams  params_;
+    std::vector<pthread_t> workerThreads_;
     int           timerId_;
     std::shared_ptr<KmlFile> kml_;
 

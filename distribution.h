@@ -1,8 +1,6 @@
 #ifndef DISTRIBUTION_H
 #define DISTRIBUTION_H
 
-#include <random>
-
 class Distribution
 {
 public:
@@ -19,7 +17,6 @@ public:
 protected:
     double mean_;
     double stdDev_;
-    mutable std::normal_distribution<> norm_;
 };
 
 #endif // DISTRIBUTION_H

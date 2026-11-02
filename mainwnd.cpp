@@ -7,6 +7,7 @@
 #include <QHBoxLayout>
 #include <QVector2D>
 #include <QVector3D>
+#include <thread>
 
 #include "units.h"
 #include "util.h"
@@ -139,7 +140,26 @@ MainWnd::MainWnd()
 
 MainWnd::~MainWnd()
 {
+    cancelWorkers();
     pthread_mutex_destroy(&params_.mutex);
+}
+
+void MainWnd::cancelWorkers()
+{
+    pthread_mutex_lock(&params_.mutex);
+    params_.cancelRequested = true;
+    pthread_mutex_unlock(&params_.mutex);
+
+    joinWorkers();
+}
+
+void MainWnd::joinWorkers()
+{
+    for(pthread_t worker : workerThreads_)
+    {
+        pthread_join(worker, NULL);
+    }
+    workerThreads_.clear();
 }
 
 void MainWnd::loadSettings()
@@ -390,14 +410,29 @@ void MainWnd::startStop()
                     );
 
         // Divvy the work load between some threads.
-        static const int numThreads = 8;
+        unsigned int numThreads = std::max(1u, std::thread::hardware_concurrency());
+        if(params_.totalIterations > 0)
+        {
+            numThreads = std::min(numThreads, static_cast<unsigned int>(params_.totalIterations));
+        }
         params_.iterationsPerThread = params_.totalIterations / numThreads;
-        params_.totalIterations     = params_.iterationsPerThread * numThreads;
-        for(int i = 0; i < numThreads; ++i)
+        workerThreads_.clear();
+        workerThreads_.reserve(numThreads);
+        for(unsigned int i = 0; i < numThreads; ++i)
         {
             pthread_t id;
-            pthread_create(&id, NULL, workerThread, &params_);
-            pthread_detach(id);
+            if(pthread_create(&id, NULL, workerThread, &params_) == 0)
+            {
+                workerThreads_.push_back(id);
+            }
+        }
+        params_.totalIterations = params_.iterationsPerThread * workerThreads_.size();
+        if(workerThreads_.empty())
+        {
+            kml_.reset();
+            progress_->setVisible(false);
+            startBtn_->setText(tr("Start"));
+            return;
         }
 
         // Start a timer to track progress and check for completion.
@@ -409,12 +444,9 @@ void MainWnd::startStop()
     else
     {
         // Cancel the current simulation.
-        pthread_mutex_lock(&params_.mutex);
-        params_.cancelRequested = true;
-        pthread_mutex_unlock(&params_.mutex);
-
         killTimer(timerId_);
         timerId_ = 0;
+        cancelWorkers();
         progress_->setVisible(false);
         startBtn_->setText(tr("Start"));
     }
@@ -729,6 +761,7 @@ void MainWnd::timerEvent(QTimerEvent*)
     {
         killTimer(timerId_);
         timerId_ = 0;
+        joinWorkers();
 
         kml_->startFolder("Grid");
         int idx            = 0;
