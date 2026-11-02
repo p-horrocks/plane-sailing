@@ -1,5 +1,7 @@
 #include "thread.h"
 
+#include <cmath>
+
 #include "units.h"
 #include "util.h"
 #include "point3d.h"
@@ -48,8 +50,13 @@ void* workerThread(void* params)
 
         pthread_mutex_lock(&tp->mutex);
 
-        int col = std::round((crashPos.x_ - tp->gridOrigin.x_) / tp->metresPerCell);
-        int row = std::round((crashPos.y_ - tp->gridOrigin.y_) / tp->metresPerCell);
+        // Grid polygons use their origin as the lower-left edge, so cells are
+        // half-open intervals [edge, next edge). Floor maps points to those
+        // same intervals and keeps points below the grid out of cell zero.
+        int col = static_cast<int>(std::floor(
+                    (crashPos.x_ - tp->gridOrigin.x_) / tp->metresPerCell));
+        int row = static_cast<int>(std::floor(
+                    (crashPos.y_ - tp->gridOrigin.y_) / tp->metresPerCell));
         if((col >= 0) && (row >= 0) && (col < tp->gridCellsX) && (row < tp->gridCellsY))
         {
             int idx = col + (row * tp->gridCellsX);
