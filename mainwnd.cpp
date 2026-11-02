@@ -28,6 +28,7 @@ const QString TOWERNORTH_KEY        = "TowerNorthing";
 const QString TOWERCELL_KEY         = "TowerGridCell";
 const QString GRIDTOMAG_KEY         = "GridToMagnetic";
 const QString FIXMAGVAR_KEY         = "FixMagneticVariation";
+const QString GROUNDTRACK_KEY       = "UseGroundTrack";
 const QString FIXRANGEMEAN_KEY      = "FixRange.Mean";
 const QString FIXRANGESTD_KEY       = "FixRange.Std";
 const QString FIXBEARINGMEAN_KEY    = "FixBearing.Mean";
@@ -192,11 +193,20 @@ void MainWnd::loadSettings()
     dataSet = dataSetBox_->currentText();
     dataSet += '/';
 
+    // Upgrade the built-in preset created by versions that treated the MLE
+    // ground track as an aircraft heading and added wind a second time.
+    if(dataSetBox_->currentText() == MLE_DATASET &&
+       !settings_->contains(dataSet + GROUNDTRACK_KEY))
+    {
+        addDefaultDataSet();
+    }
+
     double towerEasting      = settings_->value(dataSet + TOWEREAST_KEY).toDouble();
     double towerNorthing     = settings_->value(dataSet + TOWERNORTH_KEY).toDouble();
     QString towerCell        = settings_->value(dataSet + TOWERCELL_KEY).toString();
     double gridToMag         = settings_->value(dataSet + GRIDTOMAG_KEY).toDouble();
     double fixMagVariation   = settings_->value(dataSet + FIXMAGVAR_KEY, 12.066).toDouble();
+    bool useGroundTrack      = settings_->value(dataSet + GROUNDTRACK_KEY, false).toBool();
     double fixRangeMean      = settings_->value(dataSet + FIXRANGEMEAN_KEY).toDouble();
     double fixRangeStd       = settings_->value(dataSet + FIXRANGESTD_KEY).toDouble();
     double fixBearingMean    = settings_->value(dataSet + FIXBEARINGMEAN_KEY).toDouble();
@@ -217,6 +227,7 @@ void MainWnd::loadSettings()
     towerCell_->setText(towerCell);
     gridToMag_->setText(QString::number(gridToMag, 'f', 3));
     fixMagVariation_->setText(QString::number(fixMagVariation, 'f', 3));
+    useGroundTrack_->setCheckState(useGroundTrack ? Qt::Checked : Qt::Unchecked);
     fixRangeMean_->setText(QString::number(fixRangeMean, 'f', 3));
     fixRangeStd_->setText(QString::number(fixRangeStd, 'f', 4));
     fixBearingMean_->setText(QString::number(fixBearingMean, 'f', 2));
@@ -267,6 +278,7 @@ void MainWnd::saveSettings()
     QString towerCell        = towerCell_->text();
     double gridToMag         = gridToMag_->text().toDouble();
     double fixMagVariation   = fixMagVariation_->text().toDouble();
+    bool useGroundTrack      = useGroundTrack_->checkState() == Qt::Checked;
     double fixRangeMean      = fixRangeMean_->text().toDouble();
     double fixRangeStd       = fixRangeStd_->text().toDouble();
     double fixBearingMean    = fixBearingMean_->text().toDouble();
@@ -289,6 +301,7 @@ void MainWnd::saveSettings()
     settings_->setValue(dataSet + TOWERCELL_KEY, towerCell);
     settings_->setValue(dataSet + GRIDTOMAG_KEY, gridToMag);
     settings_->setValue(dataSet + FIXMAGVAR_KEY, fixMagVariation);
+    settings_->setValue(dataSet + GROUNDTRACK_KEY, useGroundTrack);
     settings_->setValue(dataSet + FIXRANGEMEAN_KEY, fixRangeMean);
     settings_->setValue(dataSet + FIXRANGESTD_KEY, fixRangeStd);
     settings_->setValue(dataSet + FIXBEARINGMEAN_KEY, fixBearingMean);
@@ -349,6 +362,7 @@ void MainWnd::startStop()
             params_.towerLocation.y_ -= 100000.0;
         }
         params_.timeStep            = timeStep_->text().toDouble();
+        params_.useGroundTrack      = useGroundTrack_->checkState() == Qt::Checked;
         params_.fixRange            = Distribution(NMToMetres(fixRangeMean_->text().toDouble()),               NMToMetres(fixRangeStd_->text().toDouble()));
         params_.fixBearing          = Distribution(DEG2RAD(fixBearingMean_->text().toDouble() + fixMagVariation), DEG2RAD(fixBearingStd_->text().toDouble()));
         params_.aircraftHeading     = Distribution(DEG2RAD(planeHeadingMean_->text().toDouble() + gridToMag),  DEG2RAD(planeHeadingStd_->text().toDouble()));
@@ -511,12 +525,17 @@ QWidget* MainWnd::createFixedBox()
     vert.push_back(tr("Tower UTM cell"));
     vert.push_back(tr("Track magnetic variation (deg E)"));
     vert.push_back(tr("Fix magnetic variation (deg E)"));
+    vert.push_back(tr("Use ground track and speed"));
 
     towerEasting_  = new QTableWidgetItem;
     towerNorthing_ = new QTableWidgetItem;
     towerCell_     = new QTableWidgetItem;
     gridToMag_     = new QTableWidgetItem;
     fixMagVariation_ = new QTableWidgetItem;
+    useGroundTrack_ = new QTableWidgetItem;
+    useGroundTrack_->setFlags((useGroundTrack_->flags() & ~Qt::ItemIsEditable) |
+                              Qt::ItemIsUserCheckable);
+    useGroundTrack_->setCheckState(Qt::Unchecked);
 
     QTableWidget* table = new QTableWidget;
     table->setRowCount(vert.size());
@@ -528,6 +547,7 @@ QWidget* MainWnd::createFixedBox()
     table->setItem(2, 0, towerCell_);
     table->setItem(3, 0, gridToMag_);
     table->setItem(4, 0, fixMagVariation_);
+    table->setItem(5, 0, useGroundTrack_);
 
     QHBoxLayout* layout = new QHBoxLayout;
     layout->addWidget(table);
@@ -547,7 +567,7 @@ QWidget* MainWnd::createRandomBox()
     vert.push_back(tr("Tower fix range (NM)"));
     vert.push_back(tr("Tower fix bearing (mag)"));
     vert.push_back(tr("Wind Direction (mag)"));
-    vert.push_back(tr("Aircraft heading (mag)"));
+    vert.push_back(tr("Track / aircraft heading (mag)"));
     vert.push_back(tr("Initial bank rate (deg/s)"));
     vert.push_back(tr("Bank rate acceleration (deg/s/s)"));
 
@@ -697,6 +717,7 @@ void MainWnd::addDefaultDataSet()
     settings_->setValue(dataSet + TOWERCELL_KEY,        "56HLJ");
     settings_->setValue(dataSet + GRIDTOMAG_KEY,        11.732);
     settings_->setValue(dataSet + FIXMAGVAR_KEY,        12.066);
+    settings_->setValue(dataSet + GROUNDTRACK_KEY,      true);
 
     // MLE V3 publishes ranges rather than statistical distributions. Represent
     // each range as +/-3 standard deviations around its midpoint.
@@ -724,8 +745,8 @@ void MainWnd::addDefaultDataSet()
     }
     defaultFlight[] =
     {
-        { "19:36:00", 0.0, 8000.0, 0.0, 146.0, 0.0 },
-        { "19:40:06", 0.0, 8000.0, 0.0, 146.0, 0.0 },
+        { "19:36:00", 0.0, 8000.0, 0.0, 196.0, 0.0 },
+        { "19:40:06", 0.0, 8000.0, 0.0, 196.0, 0.0 },
         { QVariant(), QVariant(), QVariant(), QVariant(), QVariant(), QVariant() }
     };
 

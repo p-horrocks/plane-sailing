@@ -19,6 +19,7 @@ struct ThreadParams
     int          iterationsPerThread;
     Point2D      towerLocation;
     double       timeStep;
+    bool         useGroundTrack;
 
     Distribution fixRange;
     Distribution fixBearing;

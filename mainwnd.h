@@ -60,6 +60,7 @@ protected:
     QTableWidgetItem* towerCell_;
     QTableWidgetItem* gridToMag_;
     QTableWidgetItem* fixMagVariation_;
+    QTableWidgetItem* useGroundTrack_;
 
     QTableWidgetItem* fixRangeMean_;
     QTableWidgetItem* fixRangeStd_;

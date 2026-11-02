@@ -44,6 +44,7 @@ Point3D CalcTrack(
         double          fixBearing,
         double          elapsedTime,
         double          heading,
+        bool            useGroundTrack,
         double          initialBankRate,
         double          bankRateAccel,
         double          windHeading,
@@ -83,8 +84,8 @@ Point3D CalcTrack(
 
         // Interpolate the plane characteristics at this time.
         double altitude   = altitudeTrack.interpolate(time);
-        double windSpeed  = windSpeeds.interpolate(altitude);
         double planeSpeed = planeSpeeds.interpolate(time);
+        double windSpeed  = useGroundTrack ? 0.0 : windSpeeds.interpolate(altitude);
 
         // Update the simulated plane location.
         heading    += bankRate * thisStep;
@@ -185,6 +186,7 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                 params.fixBearing.mean(),
                 elapsed,
                 params.aircraftHeading.mean(),
+                params.useGroundTrack,
                 params.initialBankRate.mean(),
                 params.bankRateAccel.mean(),
                 params.windDirection.mean(),
@@ -260,6 +262,7 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                     params.fixBearing.offsetMean(stdDevTracks[i].bearing),
                     elapsed,
                     params.aircraftHeading.offsetMean(stdDevTracks[i].heading),
+                    params.useGroundTrack,
                     params.initialBankRate.offsetMean(stdDevTracks[i].bankRate),
                     params.bankRateAccel.offsetMean(stdDevTracks[i].bankAccel),
                     params.windDirection.offsetMean(stdDevTracks[i].windDir),
@@ -277,6 +280,7 @@ Point3D createStdTracks(KmlFile& kml, ThreadParams& params)
                     params.fixBearing.offsetMean(-stdDevTracks[i].bearing),
                     elapsed,
                     params.aircraftHeading.offsetMean(-stdDevTracks[i].heading),
+                    params.useGroundTrack,
                     params.initialBankRate.offsetMean(-stdDevTracks[i].bankRate),
                     params.bankRateAccel.offsetMean(-stdDevTracks[i].bankAccel),
                     params.windDirection.offsetMean(-stdDevTracks[i].windDir),

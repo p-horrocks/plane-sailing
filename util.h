@@ -27,6 +27,7 @@ Point3D CalcTrack(
         double          fixBearing,
         double          elapsedTime,
         double          heading,
+        bool            useGroundTrack,
         double          initialBankRate,
         double          bankRateAccel,
         double          windHeading,

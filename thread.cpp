@@ -33,6 +33,7 @@ void* workerThread(void* params)
                         tp->fixBearing.sample(),
                         time,
                         tp->aircraftHeading.sample(),
+                        tp->useGroundTrack,
                         tp->initialBankRate.sample(),
                         tp->bankRateAccel.sample(),
                         tp->windDirection.sample(),
